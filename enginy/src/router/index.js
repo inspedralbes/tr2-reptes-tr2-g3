@@ -6,8 +6,28 @@
 
 // Composables
 import { createRouter, createWebHistory } from 'vue-router'
-import { routes } from 'vue-router/auto-routes'
 
+import paginaPrincipal from '@/pages/paginaPrincipal.vue'
+import Cataleg from '@/pages/Cataleg.vue'
+import Login from '@/pages/Login.vue'
+
+const routes = [
+  {
+    path: '/cataleg',
+    name: 'Cataleg',
+    component: Cataleg
+  },
+  {
+    path: '/',
+    name: 'paginaPrincipal',
+    component: paginaPrincipal
+  },
+  {
+    path: '/login',
+    name: 'Login',
+    component: Login
+  }
+]
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes,
