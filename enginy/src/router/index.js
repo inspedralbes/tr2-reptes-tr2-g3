@@ -8,14 +8,14 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
 import paginaPrincipal from '@/pages/paginaPrincipal.vue'
-import Cataleg from '@/pages/Cataleg.vue'
+import Tallers from '@/pages/Tallers.vue'
 import Login from '@/pages/Login.vue'
 
 const routes = [
   {
-    path: '/cataleg',
-    name: 'Cataleg',
-    component: Cataleg
+    path: '/tallers',
+    name: 'Tallers',
+    component: Tallers
   },
   {
     path: '/',
