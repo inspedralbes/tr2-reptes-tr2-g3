@@ -44,6 +44,7 @@ async function createUsuari(data) {
     return result.insertedId;
 }
 
+
 async function createTaller(data) {
     const db = await connectDB();
     validarEnum(data.modalitat, MODALITATS, 'modalitat');
@@ -51,6 +52,7 @@ async function createTaller(data) {
     const tallerDoc = {
         codi: data.codi,
         nom: data.nom,
+        imatge: data.imatge || "", 
         modalitat: data.modalitat, 
         descripcio: data.descripcio,
         places_totals: parseInt(data.places_totals),
@@ -62,7 +64,6 @@ async function createTaller(data) {
     const result = await db.collection('tallers').insertOne(tallerDoc);
     return result.insertedId;
 }
-
 async function createSollicitud(centreUserId, tallerId, data) {
     const db = await connectDB();
     
@@ -76,7 +77,7 @@ async function createSollicitud(centreUserId, tallerId, data) {
         taller_id: new ObjectId(tallerId),
         estat: 'pendent',
         data_sollicitud: new Date(),
-        alumnes_previstos: data.alumnes_previstos,
+        alumnes_previstos: parseInt(data.alumnes_previstos), // Aseguramos que sea número
         preferencies: {
             dia_preferit: data.dia_preferit,
             observacions: data.observacions
@@ -90,9 +91,10 @@ async function createSollicitud(centreUserId, tallerId, data) {
 
     const result = await db.collection('sollicituds').insertOne(solicitudDoc);
 
+    // RESTAR PLAZAS
     await db.collection('tallers').updateOne(
         { _id: new ObjectId(tallerId) },
-        { $inc: { places_disponibles: -1 } }
+        { $inc: { places_disponibles: -parseInt(data.alumnes_previstos) } }
     );
 
     return result.insertedId;
@@ -111,3 +113,6 @@ async function createValoracio(sollicitudId, tallerId, tipoUsuario, respostes) {
 
     return await db.collection('valoracions').insertOne(valoracioDoc);
 }
+
+// --- IMPORTANTE: EXPORTAR LAS FUNCIONES ---
+module.exports = { createUsuari, createTaller, createSollicitud, createValoracio };

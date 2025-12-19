@@ -10,6 +10,8 @@ import { createRouter, createWebHistory } from 'vue-router'
 import paginaPrincipal from '@/pages/paginaPrincipal.vue'
 import Tallers from '@/pages/Tallers.vue'
 import Login from '@/pages/Login.vue'
+import CrearTaller from '@/pages/CrearTaller.vue'
+import CrearSolicitud from '@/pages/CrearSolicitud.vue'
 
 const routes = [
   {
@@ -26,6 +28,16 @@ const routes = [
     path: '/login',
     name: 'Login',
     component: Login
+  },
+  {
+    path: '/crearTaller',
+    name: 'CrearTaller',
+    component: CrearTaller
+  },
+  {
+    path: '/crearSolicitud',
+    name: 'CrearSolicitud',
+    component: CrearSolicitud
   }
 ]
 const router = createRouter({

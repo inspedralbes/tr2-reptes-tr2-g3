@@ -58,6 +58,20 @@
             >
               Tallers
             </v-btn>
+            <v-btn 
+              to="/crearTaller" 
+              variant="text" 
+              class="text-none font-weight-bold text-blue-darken-4 rounded-0 h-100 menu-btn"
+            >
+              Crear Taller
+            </v-btn>
+            <v-btn 
+              to="/crearSolicitud" 
+              variant="text" 
+              class="text-none font-weight-bold text-blue-darken-4 rounded-0 h-100 menu-btn"
+            >
+              Crear Sol·licitud
+            </v-btn>
           </div>
 
           <div class="d-flex align-center" style="width: 250px;">

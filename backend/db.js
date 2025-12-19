@@ -1,10 +1,8 @@
+require('dotenv').config();
 const { MongoClient } = require('mongodb');
-
-const url = 'mongodb+srv://a24matnegcar:PtF1HL6TuS2BmmOq@proyectodam.fzutqex.mongodb.net/?appName=ProyectoDAM';
-const dbName = 'enginybd'; 
-
+const url = process.env.MONGO_URL; 
+const dbName = 'enginybd';
 let db = null;
-
 async function connectDB() {
     if (db) return db;
     try {

@@ -19,6 +19,8 @@ declare module 'vue-router/auto-routes' {
    */
   export interface RouteNamedMap {
     '/': RouteRecordInfo<'/', '/', Record<never, never>, Record<never, never>>,
+    '/CrearSolicitud': RouteRecordInfo<'/CrearSolicitud', '/CrearSolicitud', Record<never, never>, Record<never, never>>,
+    '/CrearTaller': RouteRecordInfo<'/CrearTaller', '/CrearTaller', Record<never, never>, Record<never, never>>,
     '/Login': RouteRecordInfo<'/Login', '/Login', Record<never, never>, Record<never, never>>,
     '/paginaPrincipal': RouteRecordInfo<'/paginaPrincipal', '/paginaPrincipal', Record<never, never>, Record<never, never>>,
     '/Registre': RouteRecordInfo<'/Registre', '/Registre', Record<never, never>, Record<never, never>>,
@@ -38,6 +40,14 @@ declare module 'vue-router/auto-routes' {
   export interface _RouteFileInfoMap {
     'src/pages/index.vue': {
       routes: '/'
+      views: never
+    }
+    'src/pages/CrearSolicitud.vue': {
+      routes: '/CrearSolicitud'
+      views: never
+    }
+    'src/pages/CrearTaller.vue': {
+      routes: '/CrearTaller'
       views: never
     }
     'src/pages/Login.vue': {
