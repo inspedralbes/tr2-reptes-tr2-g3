@@ -35,7 +35,7 @@ const routes = [
     component: CrearTaller
   },
   {
-    path: '/crearSolicitud',
+    path: '/crearSolicitud/:id',
     name: 'CrearSolicitud',
     component: CrearSolicitud
   }

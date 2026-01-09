@@ -8,7 +8,7 @@
     <div v-else>
       <div class="hero-container">
         <v-img
-          :src="generarImagen(taller.nom)"
+          :src="generarImagen(taller)"
           height="400"
           cover
           class="align-end"
@@ -21,7 +21,7 @@
             <h1 class="text-h3 font-weight-black text-white mb-2 shadow-text">{{ taller.nom }}</h1>
             <div class="d-flex align-center text-white text-h6 shadow-text">
                <v-icon class="mr-2" color="white">mdi-map-marker</v-icon> 
-               {{ taller.lloc || 'Lloc per confirmar' }}
+               {{ taller.lloc || 'Institut Milà i Fontanals' }}
             </div>
           </v-container>
         </v-img>
@@ -47,8 +47,11 @@
                   <v-chip v-if="taller.detalls_tecnics?.transport" variant="outlined" color="indigo" prepend-icon="mdi-bus">
                     Transport Requerit
                   </v-chip>
-                  <v-chip v-if="taller.detalls_tecnics?.material" variant="outlined" color="teal" prepend-icon="mdi-bag-personal">
-                    Material Específic
+                  <v-chip v-if="taller.detalls_tecnics?.ordinador" variant="outlined" color="teal" prepend-icon="mdi-laptop">
+                    Ordinador Requerit
+                  </v-chip>
+                  <v-chip v-if="taller.detalls_tecnics?.bata" variant="outlined" color="deep-orange" prepend-icon="mdi-coat-rack">
+                    Roba especial / Bata
                   </v-chip>
                   <v-chip variant="outlined" color="grey-darken-2" prepend-icon="mdi-clock-outline">
                     Durada: 3h
@@ -188,7 +191,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed } from 'vue';
+import { ref, reactive, onMounted } from 'vue';
 import { useRoute } from 'vue-router'; 
 
 const route = useRoute();
@@ -201,7 +204,7 @@ const formRef = ref(null);
 // ESTADO: Datos del Taller
 const taller = ref({});
 
-// ESTADO: Formulario (Coincide con createSollicitud backend logic)
+// ESTADO: Formulario
 const form = reactive({
   alumnes_previstos: null,
   dia_preferit: 'Dimarts',
@@ -235,7 +238,6 @@ const reglasAlumnos = [
 ];
 
 const abrirModal = () => {
-  // Reseteamos el formulario al abrir
   form.alumnes_previstos = null;
   form.observacions = '';
   dialog.value = true;
@@ -249,44 +251,47 @@ const enviarSolicitud = async () => {
   enviando.value = true;
 
   try {
-    // Construimos el body tal cual lo pide tu función createSollicitud(..., ..., data)
-    // Tu backend espera: data.alumnes_previstos, data.dia_preferit, data.observacions
-    const payload = {
-      taller_id: taller.value._id,
-      alumnes_previstos: parseInt(form.alumnes_previstos),
-      dia_preferit: form.dia_preferit,
-      observacions: form.observacions
-    };
-
+    // 👇 AQUÍ ESTÁ EL CAMBIO IMPORTANTE: URL COMPLETA
     const response = await fetch('http://localhost:3000/api/sollicituds', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+      body: JSON.stringify({
+        taller_id: taller.value._id,
+        alumnes_previstos: parseInt(form.alumnes_previstos),
+        dia_preferit: form.dia_preferit,
+        observacions: form.observacions
+      })
     });
 
     if (!response.ok) throw new Error('Error al servidor');
 
-    // Éxito
     dialog.value = false;
     snackbar.value = true;
     
-    // Recargamos el taller para actualizar la barra de disponibilidad visualmente
+    // Recargamos el taller para ver como bajan las plazas
     await cargarTaller();
 
   } catch (error) {
-    alert("Error creant la sol·licitud. Revisa la consola.");
+    alert("Error creant la sol·licitud. Revisa que el backend estigui encès.");
     console.error(error);
   } finally {
     enviando.value = false;
   }
 };
 
-// --- HELPERS VISUALES ---
-const generarImagen = (nom) => {
-  if(!nom) return '';
+// --- HELPERS VISUALES (ACTUALIZADO PARA IMAGEN REAL) ---
+const generarImagen = (t) => {
+  // 1. Prioridad: Imagen real de BDD
+  if (t.imatge && t.imatge.startsWith('http')) {
+    return t.imatge;
+  }
+  
+  // 2. Fallback: Unsplash
+  const nom = t.nom || '';
   const keywords = {'Robòtica': 'robot', 'Cuina': 'chef', 'Vela': 'sea', 'Mecànica': 'bike'};
   const key = Object.keys(keywords).find(k => nom.includes(k)) || 'school';
-  return `https://source.unsplash.com/1600x900/?${keywords[key]}`;
+  const word = keywords[key] || 'education';
+  return `https://source.unsplash.com/1600x900/?${word}`;
 };
 
 const getColor = (m) => ({ A: 'indigo', B: 'teal', C: 'orange-darken-1' }[m] || 'grey');

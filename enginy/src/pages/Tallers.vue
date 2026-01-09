@@ -221,7 +221,8 @@ const generarImagen = (taller) => {
 
 const veureDetall = (taller) => {
   if (taller.places_disponibles === 0) return; 
-  router.push(`/taller/${taller._id}`);
+  
+  router.push(`/crearSolicitud/${taller._id}`);
 };
 </script>
 
