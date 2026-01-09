@@ -1,7 +1,7 @@
 <template>
   <NavBar />
 
-  <v-main class="bg-grey-lighten-5" style="min-height: 100vh; padding-top: 80px;">
+  <v-main class="bg-grey-lighten-5" style="min-height: 100vh; padding-top: 120px;">
     
     <v-container style="max-width: 1200px;" class="mb-10">
       <v-row align="end">
@@ -63,7 +63,7 @@
             >
               <div class="img-container">
                 <v-img 
-                  :src="generarImagen(taller.nom)" 
+                  :src="generarImagen(taller)" 
                   height="180" 
                   cover
                   class="align-end"
@@ -92,7 +92,7 @@
                   </h3>
                   <div class="d-flex align-center text-caption text-grey-darken-1">
                     <v-icon size="14" class="mr-1 text-grey">mdi-map-marker-outline</v-icon>
-                    <span class="text-truncate">{{ taller.lloc || 'Ubicació pendent' }}</span>
+                    <span class="text-truncate font-weight-medium">{{ taller.lloc }}</span>
                   </div>
                 </div>
 
@@ -161,10 +161,13 @@ onMounted(async () => {
 
     tallers.value = data.map(t => ({
       ...t,
+      // Generamos tags basados en los detalles técnicos
       tags: Object.keys(t.detalls_tecnics || {})
             .filter(key => t.detalls_tecnics[key] === true)
             .map(key => key.charAt(0).toUpperCase() + key.slice(1)), 
-      lloc: t.horari || "Institut Milà i Fontanals" 
+      
+      // CAMBIO IMPORTANTE: Asignamos el nombre del instituto que viene del backend
+      lloc: t.nom_institut || "Institut Públic" 
     }));
   } catch (error) {
     console.error(error);
@@ -176,21 +179,23 @@ onMounted(async () => {
 const tallersFiltrats = computed(() => {
   if (!cerca.value) return tallers.value;
   const q = cerca.value.toLowerCase();
+  // Añadimos filtro por 'lloc' para poder buscar por nombre de instituto también
   return tallers.value.filter(t => 
     t.nom.toLowerCase().includes(q) || 
-    t.modalitat.toLowerCase().includes(q)
+    t.modalitat.toLowerCase().includes(q) ||
+    t.lloc.toLowerCase().includes(q)
   );
 });
 
 // Colores más corporativos
 const getColorModalitat = (mod) => {
-  const map = { 'A': '#3B82F6', 'B': '#10B981', 'C': '#F59E0B' }; // Azul, Verde, Ambar (Tailwind palette)
+  const map = { 'A': '#3B82F6', 'B': '#10B981', 'C': '#F59E0B' }; 
   return map[mod] || 'grey';
 };
 
 const getStatusClass = (n) => {
   if (n === 0) return 'bg-grey';
-  if (n <= 3) return 'bg-red pulse'; // Rojo con animación
+  if (n <= 3) return 'bg-red pulse';
   return 'bg-green';
 };
 
@@ -200,34 +205,34 @@ const getTextoPlazas = (t) => {
   return 'Disponible';
 };
 
-// En HomeView.vue
-
 const generarImagen = (taller) => {
-  // 1. Si el taller tiene una imagen guardada en BDD, úsala:
+  // 1. Prioridad: Imagen real guardada en BDD (si la pusiste en CrearTaller)
   if (taller.imatge && taller.imatge.startsWith('http')) {
     return taller.imatge;
   }
 
-  // 2. Si no, usa la lógica automática de Unsplash (Fallback):
+  // 2. Fallback: Unsplash automático según el nombre
   const nom = taller.nom || '';
   const keywords = {
-    'Robòtica': 'technology', 'Cuina': 'kitchen', 'Vela': 'ocean', 
-    'Impressió': 'lab', 'Mecànica': 'engineering', 'Jardineria': 'nature'
+    'Robòtica': 'robot', 'Cuina': 'chef', 'Vela': 'sailing', 
+    'Impressió': '3dprinting', 'Mecànica': 'mechanic', 'Jardineria': 'garden',
+    'Sanitat': 'hospital', 'Imatge': 'camera'
   };
+  // Busca una palabra clave o usa 'school' por defecto
   const key = Object.keys(keywords).find(k => nom.includes(k));
-  const word = key ? keywords[key] : 'work';
+  const word = key ? keywords[key] : 'school';
+  
   return `https://source.unsplash.com/500x300/?${word}`;
 };
 
 const veureDetall = (taller) => {
   if (taller.places_disponibles === 0) return; 
-  
   router.push(`/crearSolicitud/${taller._id}`);
 };
 </script>
 
 <style scoped>
-/* ESTILOS CUSTOM PARA LOOK PROFESIONAL */
+/* ESTILOS (Igual que los tenías) */
 
 .hover-card {
   transition: all 0.2s ease-in-out;
@@ -237,7 +242,7 @@ const veureDetall = (taller) => {
 
 .hover-card:hover {
   transform: translateY(-2px);
-  border-color: #2196F3 !important; /* Azul primario al hover */
+  border-color: #2196F3 !important;
   box-shadow: 0 4px 20px rgba(0,0,0,0.08) !important;
 }
 
@@ -246,7 +251,6 @@ const veureDetall = (taller) => {
   overflow: hidden;
 }
 
-/* Overlay oscuro cuando está lleno */
 .overlay-full {
   position: absolute;
   top: 0; left: 0; width: 100%; height: 100%;
@@ -255,7 +259,6 @@ const veureDetall = (taller) => {
   z-index: 2;
 }
 
-/* Tags técnicos minimalistas */
 .technical-tag {
   font-size: 0.7rem;
   font-weight: 600;
@@ -266,7 +269,6 @@ const veureDetall = (taller) => {
   border-radius: 4px;
 }
 
-/* Status Dot (El puntito de color) */
 .status-dot {
   width: 8px;
   height: 8px;
@@ -276,7 +278,6 @@ const veureDetall = (taller) => {
 .bg-red { background-color: #EF4444; }
 .bg-grey { background-color: #9CA3AF; }
 
-/* Animación sutil para urgencia */
 @keyframes pulse-animation {
   0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
   70% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
@@ -286,7 +287,6 @@ const veureDetall = (taller) => {
   animation: pulse-animation 2s infinite;
 }
 
-/* Buscador custom */
 .search-field :deep(.v-field__outline__start),
 .search-field :deep(.v-field__outline__end) {
   border-color: #e0e0e0;

@@ -12,6 +12,7 @@ import Tallers from '@/pages/Tallers.vue'
 import Login from '@/pages/Login.vue'
 import CrearTaller from '@/pages/CrearTaller.vue'
 import CrearSolicitud from '@/pages/CrearSolicitud.vue'
+import Solicituds  from '@/pages/Solicituds.vue' 
 
 const routes = [
   {
@@ -38,6 +39,11 @@ const routes = [
     path: '/crearSolicitud/:id',
     name: 'CrearSolicitud',
     component: CrearSolicitud
+  },
+  {
+    path: '/solicituds',
+    name: 'Solicituds',
+    component: Solicituds
   }
 ]
 const router = createRouter({

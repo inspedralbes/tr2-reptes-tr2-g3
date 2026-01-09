@@ -3,14 +3,16 @@ const { connectDB } = require('./db');
 
 const ROLS = ['admin', 'centre', 'professor'];
 const MODALITATS = ['A', 'B', 'C'];
-const ESTATS_SOL = ['pendent', 'assignat', 'finalitzat'];
+// Definimos los estados posibles. Mapeamos 'rebutjada' para que no dé error.
+const ESTATS_SOL = ['pendent', 'assignat', 'finalitzat', 'rebutjada'];
 
 function validarEnum(valor, permitidos, campo) {
     if (!permitidos.includes(valor)) {
-        throw new Error(` Error en '${campo}': Valor '${valor}' no válido. Opciones: ${permitidos.join(', ')}`);
+        throw new Error(` Error en '${campo}': Valor '${valor}' no válido.`);
     }
 }
 
+// --- CREAR USUARIO ---
 async function createUsuari(data) {
     const db = await connectDB();
     validarEnum(data.rol, ROLS, 'rol');
@@ -36,7 +38,7 @@ async function createUsuari(data) {
         usuariDoc.perfil = {
             nom: data.nom,
             departament: data.departament,
-            disponibilitat: data.disponibilitat || [] // Array de strings
+            disponibilitat: data.disponibilitat || []
         };
     }
 
@@ -44,7 +46,7 @@ async function createUsuari(data) {
     return result.insertedId;
 }
 
-
+// --- CREAR TALLER ---
 async function createTaller(data) {
     const db = await connectDB();
     validarEnum(data.modalitat, MODALITATS, 'modalitat');
@@ -64,12 +66,16 @@ async function createTaller(data) {
     const result = await db.collection('tallers').insertOne(tallerDoc);
     return result.insertedId;
 }
+
+// --- CREAR SOLICITUD ---
 async function createSollicitud(centreUserId, tallerId, data) {
     const db = await connectDB();
     
     const taller = await db.collection('tallers').findOne({ _id: new ObjectId(tallerId) });
-    if (taller.places_disponibles <= 0) {
-        throw new Error("No quedan plazas disponibles en este taller.");
+    if (!taller) throw new Error("Taller no encontrado");
+    
+    if (taller.places_disponibles < parseInt(data.alumnes_previstos)) {
+        throw new Error("No quedan plazas disponibles.");
     }
 
     const solicitudDoc = {
@@ -77,21 +83,18 @@ async function createSollicitud(centreUserId, tallerId, data) {
         taller_id: new ObjectId(tallerId),
         estat: 'pendent',
         data_sollicitud: new Date(),
-        alumnes_previstos: parseInt(data.alumnes_previstos), // Aseguramos que sea número
+        alumnes_previstos: parseInt(data.alumnes_previstos),
         preferencies: {
             dia_preferit: data.dia_preferit,
             observacions: data.observacions
         },
         professors_assignats_ids: [], 
-        checklist_seguiment: [
-            { pas: "Confirmació assignació", completat: false, data: null },
-            { pas: "Autorització sortida", completat: false, evidencies: [] }
-        ]
+        checklist_seguiment: []
     };
 
     const result = await db.collection('sollicituds').insertOne(solicitudDoc);
 
-    // RESTAR PLAZAS
+    // Restar plazas
     await db.collection('tallers').updateOne(
         { _id: new ObjectId(tallerId) },
         { $inc: { places_disponibles: -parseInt(data.alumnes_previstos) } }
@@ -102,7 +105,6 @@ async function createSollicitud(centreUserId, tallerId, data) {
 
 async function createValoracio(sollicitudId, tallerId, tipoUsuario, respostes) {
     const db = await connectDB();
-    
     const valoracioDoc = {
         sollicitud_id: new ObjectId(sollicitudId),
         taller_id: new ObjectId(tallerId),
@@ -110,9 +112,113 @@ async function createValoracio(sollicitudId, tallerId, tipoUsuario, respostes) {
         data: new Date(),
         respostes: respostes 
     };
-
     return await db.collection('valoracions').insertOne(valoracioDoc);
 }
 
-// --- IMPORTANTE: EXPORTAR LAS FUNCIONES ---
-module.exports = { createUsuari, createTaller, createSollicitud, createValoracio };
+// ==========================================
+//  FUNCIONES NUEVAS PARA EL ADMIN (FALTABAN)
+// ==========================================
+
+// 1. OBTENER TODAS (Para rellenar la tabla)
+// EN models.js
+
+async function getAllSolicitudes() {
+    const db = await connectDB();
+    
+    return await db.collection('sollicituds').aggregate([
+        // 1. Unir con la colección de usuarios (para sacar el código del centro)
+        {
+            $lookup: {
+                from: 'usuaris',
+                localField: 'centre_id',
+                foreignField: '_id',
+                as: 'usuario_info'
+            }
+        },
+        { $unwind: { path: '$usuario_info', preserveNullAndEmptyArrays: true } },
+
+        // 2. NUEVO: Unir con la lista oficial de centros (CSV) usando el código
+        {
+            $lookup: {
+                from: 'centres_oficials',           // La colección que creamos con el script
+                localField: 'usuario_info.perfil.codi_centre', // El código que tiene el usuario
+                foreignField: '_id',                // El ID en la colección oficial (es el código)
+                as: 'dades_oficials'
+            }
+        },
+        { $unwind: { path: '$dades_oficials', preserveNullAndEmptyArrays: true } },
+        
+        // 3. Unir con talleres
+        {
+            $lookup: {
+                from: 'tallers',
+                localField: 'taller_id',
+                foreignField: '_id',
+                as: 'taller_info'
+            }
+        },
+        { $unwind: { path: '$taller_info', preserveNullAndEmptyArrays: true } },
+        
+        // 4. Proyección final (Elegir qué nombre mostrar)
+        {
+            $project: {
+                _id: 1,
+                data_sollicitud: 1, 
+                estat: 1,
+                alumnes_previstos: 1,
+                preferencies: 1,
+                // AQUÍ ESTÁ LA MAGIA:
+                // Si existe nombre en el Excel ('dades_oficials.nom'), úsalo.
+                // Si no, usa el del registro ('usuario_info...').
+                // Si no, pon "Desconegut".
+                centre_id: { 
+                    perfil: {
+                        nom_oficial: { 
+                            $ifNull: ['$dades_oficials.nom', '$usuario_info.perfil.nom_oficial', 'Institut Desconegut'] 
+                        },
+                        codi_centre: '$usuario_info.perfil.codi_centre',
+                        municipi: '$usuario_info.perfil.municipi'
+                    },
+                    email: '$usuario_info.email'
+                },
+                taller_id: { 
+                    $ifNull: ['$taller_info', { nom: 'Taller Eliminat' }] 
+                }
+            }
+        },
+        { $sort: { data_sollicitud: -1 } }
+    ]).toArray();
+}
+
+// 2. ACTUALIZAR ESTADO (Aceptar/Rechazar)
+async function updateEstatSolicitud(id, nuevoEstado) {
+    const db = await connectDB();
+    validarEnum(nuevoEstado, ESTATS_SOL, 'estat');
+
+    const solicitud = await db.collection('sollicituds').findOne({ _id: new ObjectId(id) });
+    if (!solicitud) throw new Error("No existe la solicitud");
+
+    // Si se rechaza, devolvemos las plazas al taller
+    if (nuevoEstado === 'rebutjada' && solicitud.estat !== 'rebutjada') {
+        await db.collection('tallers').updateOne(
+            { _id: solicitud.taller_id },
+            { $inc: { places_disponibles: solicitud.alumnes_previstos } }
+        );
+    }
+
+    const result = await db.collection('sollicituds').updateOne(
+        { _id: new ObjectId(id) },
+        { $set: { estat: nuevoEstado } }
+    );
+    return result;
+}
+
+// ¡IMPORTANTE!: Exportar las nuevas funciones
+module.exports = { 
+    createUsuari, 
+    createTaller, 
+    createSollicitud, 
+    createValoracio,
+    getAllSolicitudes,    // <--- Necesaria para ver la lista
+    updateEstatSolicitud  // <--- Necesaria para los botones
+};
