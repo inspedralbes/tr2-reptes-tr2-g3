@@ -52,7 +52,7 @@
 
           <v-chip-group v-model="filtroEstado" selected-class="text-primary" mandatory>
             <v-chip value="TODAS" filter variant="outlined">Totes</v-chip>
-            <v-chip value="pendent" filter variant="outlined" color="orange" text-color="orange-darken-4">Pendents</v-chip>
+            <v-chip value="pendent" filter variant="outlined" color="orange">Pendents</v-chip>
             <v-chip value="assignat" filter variant="outlined" color="success">Assignades</v-chip>
             <v-chip value="rebutjada" filter variant="outlined" color="error">Rebutjades</v-chip>
           </v-chip-group>
@@ -66,32 +66,46 @@
           hover
           class="text-body-2"
         >
-          <template v-slot:item.data_sollicitud="{ item }">
+          <template v-slot:item.data_solicitud="{ item }">
             <div class="d-flex flex-column">
-              <span class="font-weight-medium">{{ formatearFecha(item.data_sollicitud).fecha }}</span>
-              <span class="text-caption text-grey">{{ formatearFecha(item.data_sollicitud).hora }}</span>
+              <span class="font-weight-medium">{{ formatearFecha(item.data_solicitud).fecha }}</span>
+              <span class="text-caption text-grey">{{ formatearFecha(item.data_solicitud).hora }}</span>
             </div>
           </template>
 
           <template v-slot:item.usuario="{ item }">
             <div class="py-2">
-              <div class="font-weight-bold text-body-1 text-grey-darken-3">
-                {{ item.centre_id?.perfil?.nom_oficial || item.centre_id?.email || 'Desconegut' }}
+              <div class="font-weight-bold text-body-1 text-white">
+                {{ item.centre_info?.nom_oficial || (item.centre_info?.codi ? 'Centre ' + item.centre_info.codi : 'Nom no disponible') }}
               </div>
-              <div class="text-caption text-grey d-flex align-center">
-                <v-icon size="x-small" class="mr-1">mdi-email-outline</v-icon> 
-                {{ item.centre_id?.email || '-' }}
-              </div>
-              <div class="text-caption text-grey-darken-1" v-if="item.centre_id?.perfil?.municipi">
-                 {{ item.centre_id.perfil.municipi }}
+              
+              <div class="d-flex align-center mt-1">
+                 <v-chip 
+                    v-if="item.centre_info?.codi" 
+                    size="x-small" 
+                    color="primary" 
+                    variant="flat" 
+                    class="mr-2 font-weight-bold"
+                 >
+                    {{ item.centre_info.codi }}
+                 </v-chip>
+                 
+                 <div class="text-caption text-grey d-flex align-center">
+                    <v-icon size="x-small" class="mr-1">mdi-email-outline</v-icon> 
+                    {{ item.centre_info?.email || '-' }}
+                 </div>
               </div>
             </div>
           </template>
 
           <template v-slot:item.taller="{ item }">
             <v-chip size="small" variant="tonal" color="primary" class="font-weight-bold">
-              {{ item.taller_id?.nom || 'Taller no trobat' }}
+              {{ item.taller_id?.nom || 'Taller eliminat' }}
             </v-chip>
+          </template>
+
+          <template v-slot:item.alumnes_previstos="{ item }">
+            <div class="font-weight-bold text-h6">{{ item.alumnes_previstos }}</div>
           </template>
 
           <template v-slot:item.dia_preferit="{ item }">
@@ -111,7 +125,7 @@
 
           <template v-slot:item.acciones="{ item }">
             <div v-if="item.estat === 'pendent'" class="d-flex justify-end gap-2">
-              <v-tooltip text="Acceptar (Assignar)" location="top">
+              <v-tooltip text="Acceptar" location="top">
                 <template v-slot:activator="{ props }">
                   <v-btn 
                     v-bind="props"
@@ -175,7 +189,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 
-// --- ESTADO ---
 const loading = ref(true);
 const loadingId = ref(null);
 const search = ref('');
@@ -183,19 +196,16 @@ const filtroEstado = ref('TODAS');
 const solicitudes = ref([]);
 const snackbar = ref({ show: false, text: '', color: 'success', icon: 'mdi-check' });
 
-// --- CONFIGURACIÓN TABLA ---
-// Ajustamos las keys para que coincidan con la respuesta del backend
 const headers = [
-  { title: 'Data', key: 'data_sollicitud', width: '120px' }, // Cambio key
-  { title: 'Institut / Contacte', key: 'usuario' },
+  { title: 'Data', key: 'data_solicitud', width: '120px' },
+  { title: 'Institut / Contacte', key: 'usuario', width: '350px' },
   { title: 'Taller Sol·licitat', key: 'taller' },
   { title: 'Alumnes', key: 'alumnes_previstos', align: 'center' },
-  { title: 'Dia Pref.', key: 'dia_preferit', align: 'center' },
+  { title: 'Dia', key: 'dia_preferit', align: 'center' },
   { title: 'Estat', key: 'estat', align: 'center' },
   { title: 'Accions', key: 'acciones', align: 'end', sortable: false },
 ];
 
-// --- COMPUTED ---
 const solicitudesFiltradas = computed(() => {
   if (filtroEstado.value === 'TODAS') return solicitudes.value;
   return solicitudes.value.filter(s => s.estat === filtroEstado.value);
@@ -205,14 +215,10 @@ const countPendientes = computed(() =>
   solicitudes.value.filter(s => s.estat === 'pendent').length
 );
 
-// --- API FETCH ---
 const cargarSolicitudes = async () => {
   loading.value = true;
   try {
-    // IMPORTANTE: El backend debe hacer .populate('centre_id') y .populate('taller_id')
-    // si no, recibiremos solo IDs y la tabla se verá fea.
-    const response = await fetch('http://localhost:3000/api/sollicituds'); 
-    
+    const response = await fetch('http://localhost:3000/api/solicituds'); 
     if (response.ok) {
       solicitudes.value = await response.json();
     } else {
@@ -225,15 +231,10 @@ const cargarSolicitudes = async () => {
   }
 };
 
-// --- API UPDATE STATUS ---
 const actualizarEstado = async (item, nuevoEstado) => {
-  // NOTA: Según tu models.js, ESTATS_SOL = ['pendent', 'assignat', 'finalitzat'].
-  // Si envías 'rebutjada' y el backend valida el Enum, dará error 500.
-  // Asegúrate de añadir 'rebutjada' a tu models.js o usar otro estado.
-  
   loadingId.value = item._id;
   try {
-    const response = await fetch(`http://localhost:3000/api/sollicituds/${item._id}`, {
+    const response = await fetch(`http://localhost:3000/api/solicituds/${item._id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ estat: nuevoEstado })
@@ -241,7 +242,6 @@ const actualizarEstado = async (item, nuevoEstado) => {
 
     if (!response.ok) throw new Error('Error al servidor');
 
-    // Actualización local
     const index = solicitudes.value.findIndex(s => s._id === item._id);
     if(index !== -1) solicitudes.value[index].estat = nuevoEstado;
 
@@ -255,21 +255,19 @@ const actualizarEstado = async (item, nuevoEstado) => {
   }
 };
 
-// --- HELPERS ---
 const formatearFecha = (fechaISO) => {
   if (!fechaISO) return { fecha: '-', hora: '' };
   const d = new Date(fechaISO);
   return {
-    fecha: d.toLocaleDateString('ca-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+    fecha: d.toLocaleDateString('ca-ES', { day: '2-digit', month: '2-digit' }),
     hora: d.toLocaleTimeString('ca-ES', { hour: '2-digit', minute: '2-digit' })
   };
 };
 
 const getColorEstado = (estado) => {
-  // Mapeo exacto a los strings de tu Base de Datos (lowercase)
   const mapa = {
     'pendent': 'orange',
-    'assignat': 'success',   // Equivale a Aceptada
+    'assignat': 'success',
     'rebutjada': 'error',
     'finalitzat': 'grey'
   };

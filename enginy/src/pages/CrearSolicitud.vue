@@ -29,7 +29,6 @@
 
       <v-container class="mt-n10 position-relative" style="max-width: 1100px; z-index: 2;">
         <v-row>
-          
           <v-col cols="12" md="8">
             <v-card class="rounded-xl pa-8 mb-6" elevation="3">
               <div class="mb-6">
@@ -110,7 +109,7 @@
       </v-container>
     </div>
 
-    <v-dialog v-model="dialog" max-width="550" persistent transition="dialog-bottom-transition">
+    <v-dialog v-model="dialog" max-width="600" persistent transition="dialog-bottom-transition">
       <v-card class="rounded-xl">
         <v-card-item class="bg-primary text-white py-5 px-6">
           <v-card-title class="text-h6 font-weight-bold">
@@ -125,6 +124,35 @@
         <v-card-text class="pt-6 px-6">
           <v-form ref="formRef" @submit.prevent="enviarSolicitud">
              
+             <label class="text-subtitle-2 font-weight-bold text-grey-darken-1">CODI DEL CENTRE</label>
+             <v-row dense class="mt-1 mb-4">
+               <v-col cols="4">
+                 <v-text-field 
+                    v-model="form.codi_centre"
+                    variant="outlined" 
+                    density="comfortable"
+                    placeholder="Ex: 08000013"
+                    :rules="[v => !!v || 'Codi obligatori']"
+                    @update:model-value="buscarNomCentre"
+                    maxlength="10"
+                    hide-details="auto"
+                 ></v-text-field>
+               </v-col>
+               <v-col cols="8">
+                 <v-text-field 
+                    :model-value="nomCentreDetectat"
+                    variant="outlined" 
+                    density="comfortable"
+                    readonly
+                    bg-color="white"
+                    placeholder="El nom apareixerà automàticament..."
+                    prepend-inner-icon="mdi-school"
+                    hide-details
+                    class="font-weight-medium"
+                    :color="nomCentreDetectat ? 'success' : 'grey'"
+                 ></v-text-field>
+               </v-col>
+             </v-row>
              <label class="text-subtitle-2 font-weight-bold text-grey-darken-1">NOMBRE D'ALUMNES</label>
              <v-text-field 
                 v-model.number="form.alumnes_previstos"
@@ -201,21 +229,22 @@ const dialog = ref(false);
 const snackbar = ref(false);
 const formRef = ref(null);
 
-// ESTADO: Datos del Taller
+// ESTADO: Datos
 const taller = ref({});
+const nomCentreDetectat = ref(''); // Para guardar el nombre del Excel
 
 // ESTADO: Formulario
 const form = reactive({
+  codi_centre: '', // <--- NUEVO CAMPO
   alumnes_previstos: null,
   dia_preferit: 'Dimarts',
   observacions: ''
 });
 
-// --- 1. CARGAR DATOS ---
+// --- 1. CARGAR TALLER ---
 const cargarTaller = async () => {
   try {
     const id = route.params.id;
-    // Petición real a tu API
     const response = await fetch(`http://localhost:3000/api/tallers/${id}`);
     if (!response.ok) throw new Error('Taller no trobat');
     taller.value = await response.json();
@@ -230,7 +259,29 @@ onMounted(() => {
   cargarTaller();
 });
 
-// --- 2. VALIDACIÓN ---
+// --- 2. BUSCADOR DE CENTRO (Lógica Nueva) ---
+const buscarNomCentre = async (codi) => {
+  // Solo buscamos si tiene longitud suficiente para evitar llamadas innecesarias
+  if (!codi || codi.length < 5) {
+    nomCentreDetectat.value = '';
+    return;
+  }
+
+  try {
+    // Esta ruta debe existir en tu server.js
+    const response = await fetch(`http://localhost:3000/api/centres/${codi}`);
+    if (response.ok) {
+      const data = await response.json();
+      nomCentreDetectat.value = data.nom;
+    } else {
+      nomCentreDetectat.value = ''; // No encontrado
+    }
+  } catch (error) {
+    console.error("Error buscant centre", error);
+  }
+};
+
+// --- 3. VALIDACIÓN ---
 const reglasAlumnos = [
   v => !!v || "Has d'indicar quants alumnes vindran.",
   v => v > 0 || "Mínim 1 alumne.",
@@ -240,23 +291,30 @@ const reglasAlumnos = [
 const abrirModal = () => {
   form.alumnes_previstos = null;
   form.observacions = '';
+  // No reseteamos codi_centre por si el usuario hace varias pruebas
   dialog.value = true;
 };
 
-// --- 3. ENVIAR SOLICITUD (Conexión Backend) ---
+// --- 4. ENVIAR SOLICITUD ---
 const enviarSolicitud = async () => {
   const { valid } = await formRef.value.validate();
   if (!valid) return;
 
+  // Validación extra: Código válido
+  if (!nomCentreDetectat.value) {
+      alert("Codi de centre invàlid o no trobat. Revisa el número.");
+      return;
+  }
+
   enviando.value = true;
 
   try {
-    // 👇 AQUÍ ESTÁ EL CAMBIO IMPORTANTE: URL COMPLETA
-    const response = await fetch('http://localhost:3000/api/sollicituds', {
+    const response = await fetch('http://localhost:3000/api/solicituds', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         taller_id: taller.value._id,
+        codi_centre: form.codi_centre, // Enviamos el código validado
         alumnes_previstos: parseInt(form.alumnes_previstos),
         dia_preferit: form.dia_preferit,
         observacions: form.observacions
@@ -268,25 +326,20 @@ const enviarSolicitud = async () => {
     dialog.value = false;
     snackbar.value = true;
     
-    // Recargamos el taller para ver como bajan las plazas
-    await cargarTaller();
+    await cargarTaller(); // Refrescar plazas
 
   } catch (error) {
-    alert("Error creant la sol·licitud. Revisa que el backend estigui encès.");
+    alert("Error creant la sol·licitud.");
     console.error(error);
   } finally {
     enviando.value = false;
   }
 };
 
-// --- HELPERS VISUALES (ACTUALIZADO PARA IMAGEN REAL) ---
+// --- HELPERS VISUALES ---
 const generarImagen = (t) => {
-  // 1. Prioridad: Imagen real de BDD
-  if (t.imatge && t.imatge.startsWith('http')) {
-    return t.imatge;
-  }
+  if (t.imatge && t.imatge.startsWith('http')) return t.imatge;
   
-  // 2. Fallback: Unsplash
   const nom = t.nom || '';
   const keywords = {'Robòtica': 'robot', 'Cuina': 'chef', 'Vela': 'sea', 'Mecànica': 'bike'};
   const key = Object.keys(keywords).find(k => nom.includes(k)) || 'school';

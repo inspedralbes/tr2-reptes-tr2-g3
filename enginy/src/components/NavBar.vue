@@ -14,7 +14,10 @@
         </div>
 
         <div class="d-none d-md-flex align-center text-caption text-grey-darken-2 gap-3">
-
+          <div class="d-flex align-center mr-4">
+            <v-icon size="small" class="mr-1">mdi-earth</v-icon>
+            <span class="cursor-pointer hover-blue">Idioma</span>
+          </div>
           <v-btn 
             prepend-icon="mdi-account" 
             variant="outlined" 
