@@ -14,17 +14,6 @@
         </div>
 
         <div class="d-none d-md-flex align-center text-caption text-grey-darken-2 gap-3">
-          <div class="d-flex align-center mr-4">
-            <v-icon size="small" class="mr-1">mdi-earth</v-icon>
-            <span class="cursor-pointer hover-blue">Idioma</span>
-          </div>
-          <span class="cursor-pointer hover-blue mr-3">Notícies</span>
-          <span class="cursor-pointer hover-blue mr-3">Mapa web</span>
-          <span class="cursor-pointer hover-blue mr-3">Contacte</span>
-
-          <v-btn icon size="x-small" color="#004B87" variant="text" class="mr-1"><v-icon>mdi-twitter</v-icon></v-btn>
-          <v-btn icon size="x-small" color="#004B87" variant="text" class="mr-1"><v-icon>mdi-facebook</v-icon></v-btn>
-          <v-btn icon size="x-small" color="#004B87" variant="text" class="mr-3"><v-icon>mdi-instagram</v-icon></v-btn>
 
           <v-btn 
             prepend-icon="mdi-account" 

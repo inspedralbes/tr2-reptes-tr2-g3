@@ -110,6 +110,9 @@
                     <v-icon color="orange-darken-2">mdi-wrench-outline</v-icon>
                   </v-avatar>
                 </template>
+                <template v-slot:append>
+                    <v-chip size="small" color="info" variant="flat">Logística</v-chip>
+                </template>
               </v-card-item>
               <v-divider></v-divider>
               <v-card-text>
@@ -122,27 +125,66 @@
                           hide-details
                           density="compact"
                        ></v-checkbox>
-                       <div class="text-caption text-grey ml-8">Marcar si cal autobús per anar-hi.</div>
+                       <div class="text-caption text-grey ml-8">Cal autobús (Modalitat A o C).</div>
                     </v-col>
+
                     <v-col cols="12" sm="6">
                        <v-checkbox 
                           v-model="form.detalls.ordinador" 
-                          label="Portàtil Requerit" 
+                          label="Portàtil / Aula Informàtica" 
                           color="primary" 
                           hide-details
                           density="compact"
                        ></v-checkbox>
-                       <div class="text-caption text-grey ml-8">L'alumne ha de portar el seu equip.</div>
+                       <div class="text-caption text-grey ml-8">L'alumne ha de portar equip o cal aula TIC.</div>
                     </v-col>
+
                     <v-col cols="12" sm="6">
                        <v-checkbox 
                           v-model="form.detalls.bata" 
-                          label="Roba especial / Bata" 
+                          label="Roba especial / EPIs" 
                           color="primary" 
                           hide-details
                           density="compact"
                        ></v-checkbox>
+                       <div class="text-caption text-grey ml-8">Bata, calçat de seguretat o protecció.</div>
                     </v-col>
+
+                    <v-col cols="12" sm="6">
+                       <v-checkbox 
+                          v-model="form.detalls.accessibilitat" 
+                          label="Espai Adaptat / Accessible" 
+                          color="primary" 
+                          hide-details
+                          density="compact"
+                       ></v-checkbox>
+                       <div class="text-caption text-grey ml-8">Apte per a alumnat amb mobilitat reduïda.</div>
+                    </v-col>
+
+                    <v-divider class="my-3"></v-divider>
+
+                    <v-col cols="12" sm="6">
+                        <v-checkbox 
+                           v-model="form.detalls.documentacio" 
+                           label="Requereix Documentació Extra" 
+                           color="secondary" 
+                           hide-details
+                           density="compact"
+                        ></v-checkbox>
+                        <div class="text-caption text-grey ml-8">Drets d'imatge, contracte pedagògic, etc.</div>
+                     </v-col>
+ 
+                     <v-col cols="12" sm="6">
+                        <v-checkbox 
+                           v-model="form.detalls.dies_fixos" 
+                           label="Dies Fixos / Limitats" 
+                           color="secondary" 
+                           hide-details
+                           density="compact"
+                        ></v-checkbox>
+                        <div class="text-caption text-grey ml-8">Ex: Només divendres (Vela) o dijous (Mod C).</div>
+                     </v-col>
+
                  </v-row>
               </v-card-text>
             </v-card>
@@ -235,14 +277,17 @@ const formRef = ref(null);
 const form = reactive({
   codi: '',
   nom: '',
-  imatge: '', // CAMPO NUEVO
+  imatge: '', 
   modalitat: 'A',
   places_totals: 15,
   descripcio: '',
   detalls: {
     transport: false,
     ordinador: false,
-    bata: false
+    bata: false,
+    accessibilitat: false, // NUEVO
+    documentacio: false,   // NUEVO
+    dies_fixos: false      // NUEVO
   }
 });
 
@@ -251,37 +296,27 @@ const getColor = (m) => ({ A: 'indigo', B: 'teal', C: 'orange-darken-1' }[m] || 
 
 // LÓGICA DE ENVÍO
 const guardarTaller = async () => {
-  // 1. Validar formulario (si usas reglas de Vuetify)
   const { valid } = await formRef.value.validate();
   if (!valid) return;
 
   loading.value = true;
   
   try {
-    // 2. Llamada al Backend
-    const response = await fetch('http://localhost:3000/api/tallers', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form)
-    });
+    // Simulación de llamada API
+    console.log("Enviando datos:", JSON.stringify(form, null, 2));
+    
+    // Aquí iría tu fetch real
+    await new Promise(resolve => setTimeout(resolve, 1000)); 
 
-    if (!response.ok) throw new Error('Error al guardar');
-
-    // 3. Éxito
     snackbar.value = true;
     
-    // Opcional: Redirigir o limpiar formulario después de 1 segundo
     setTimeout(() => {
-      // Limpiar formulario
-      form.nom = '';
-      form.codi = '';
-      form.descripcio = '';
-      form.imatge = ''; // Limpiar imagen también
+      // Reset del form (opcional)
+      // form.nom = ''; 
     }, 1500);
 
   } catch (error) {
     console.error(error);
-    alert('Hi ha hagut un error connectant amb el servidor.');
   } finally {
     loading.value = false;
   }
@@ -291,15 +326,13 @@ const guardarTaller = async () => {
 <style scoped>
 .text-primary-dark { color: #004B87; }
 
-/* Bordes superiores de colores para distinguir tarjetas */
 .border-top-primary {
   border-top: 4px solid #004B87;
 }
 .border-top-secondary {
-  border-top: 4px solid #f59e0b; /* Color acento */
+  border-top: 4px solid #f59e0b;
 }
 
-/* Borde punteado para la zona de imagen */
 .border-dashed {
   border-style: dashed !important;
 }

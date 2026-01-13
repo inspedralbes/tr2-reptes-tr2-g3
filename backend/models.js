@@ -81,6 +81,7 @@ async function createSollicitud(centreUserId, tallerId, data) {
     const solicitudDoc = {
         centre_id: new ObjectId(centreUserId), 
         taller_id: new ObjectId(tallerId),
+        nom_centre: data.nom_centre || null, // Guardamos el nombre manual si existe
         estat: 'pendent',
         data_sollicitud: new Date(),
         alumnes_previstos: parseInt(data.alumnes_previstos),
@@ -169,12 +170,14 @@ async function getAllSolicitudes() {
                 preferencies: 1,
                 // AQUÍ ESTÁ LA MAGIA:
                 // Si existe nombre en el Excel ('dades_oficials.nom'), úsalo.
+                // Si existe nombre manual ('nom_centre'), úsalo con prioridad.
                 // Si no, usa el del registro ('usuario_info...').
                 // Si no, pon "Desconegut".
                 centre_id: { 
                     perfil: {
                         nom_oficial: { 
                             $ifNull: ['$dades_oficials.nom', '$usuario_info.perfil.nom_oficial', 'Institut Desconegut'] 
+                            $ifNull: ['$nom_centre', '$dades_oficials.nom', '$usuario_info.perfil.nom_oficial', 'Institut Desconegut'] 
                         },
                         codi_centre: '$usuario_info.perfil.codi_centre',
                         municipi: '$usuario_info.perfil.municipi'
