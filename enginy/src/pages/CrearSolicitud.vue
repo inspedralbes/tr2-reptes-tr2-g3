@@ -15,14 +15,31 @@
           gradient="to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.8) 100%"
         >
           <v-container style="max-width: 1100px;" class="pb-10">
-            <v-chip :color="getColor(taller.modalitat)" class="mb-4 font-weight-bold text-white shadow-chip" size="large">
-              Modalitat {{ taller.modalitat }}
-            </v-chip>
-            <h1 class="text-h3 font-weight-black text-white mb-2 shadow-text">{{ taller.nom }}</h1>
-            <div class="d-flex align-center text-white text-h6 shadow-text">
-               <v-icon class="mr-2" color="white">mdi-map-marker</v-icon> 
-               {{ taller.lloc || 'Institut Milà i Fontanals' }}
-            </div>
+            <v-row align="end">
+              <v-col>
+                <v-chip :color="getColor(taller.modalitat)" class="mb-4 font-weight-bold text-white shadow-chip" size="large">
+                  Modalitat {{ taller.modalitat }}
+                </v-chip>
+                <h1 class="text-h3 font-weight-black text-white mb-2 shadow-text">{{ taller.nom }}</h1>
+                <div class="d-flex align-center text-white text-h6 shadow-text">
+                   <v-icon class="mr-2" color="white">mdi-map-marker</v-icon> 
+                   {{ taller.lloc || 'Institut Milà i Fontanals' }}
+                </div>
+              </v-col>
+
+              <v-col cols="auto">
+                <v-btn 
+                  variant="tonal" 
+                  color="white" 
+                  prepend-icon="mdi-arrow-left"
+                  height="50"
+                  class="bg-grey-darken-4"
+                  @click="$router.back()"
+                >
+                  Tornar
+                </v-btn>
+              </v-col>
+            </v-row>
           </v-container>
         </v-img>
       </div>
@@ -153,6 +170,7 @@
                  ></v-text-field>
                </v-col>
              </v-row>
+
              <label class="text-subtitle-2 font-weight-bold text-grey-darken-1">NOMBRE D'ALUMNES</label>
              <v-text-field 
                 v-model.number="form.alumnes_previstos"

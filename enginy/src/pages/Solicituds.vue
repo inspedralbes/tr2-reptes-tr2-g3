@@ -11,7 +11,7 @@
           <p class="text-subtitle-1 text-grey-darken-1">Administra les peticions dels centres educatius</p>
         </div>
         
-        <div class="d-flex gap-4">
+        <div class="d-flex align-center gap-4">
           <v-card flat class="d-flex align-center px-4 py-2 rounded-lg border-orange bg-orange-lighten-5">
             <v-avatar color="orange-darken-1" size="small" class="mr-3">
               <v-icon icon="mdi-clock-outline" size="small"></v-icon>
@@ -30,6 +30,15 @@
             :loading="loading"
           >
             Actualitzar
+          </v-btn>
+          <v-btn 
+            variant="tonal" 
+            color="grey-darken-2" 
+            prepend-icon="mdi-arrow-left"
+            height="50"
+            @click="$router.back()"
+          >
+            Tornar
           </v-btn>
         </div>
       </div>
