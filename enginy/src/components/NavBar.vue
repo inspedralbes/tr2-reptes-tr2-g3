@@ -64,6 +64,13 @@
             >
               Administrar Sol·licituds
             </v-btn>
+            <v-btn 
+              to="/crearUsuaris" 
+              variant="text" 
+              class="text-none font-weight-bold text-blue-darken-4 rounded-0 h-100 menu-btn"
+            >
+              Crear Usuaris
+            </v-btn>
           </div>
 
           <div class="d-flex align-center" style="width: 250px;">

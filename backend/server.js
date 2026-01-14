@@ -105,15 +105,22 @@ app.post('/api/solicituds', async (req, res) => {
     }
 });
 
+// En tu server.js o routes.js
 app.get('/api/centres/:codi', async (req, res) => {
     try {
+        const { connectDB } = require('./db');
         const db = await connectDB();
-        // AÑADIDO: Aseguramos 8 dígitos (ej: "80123" -> "00080123") para coincidir con la BD
-        const codi = req.params.codi.trim().padStart(8, '0');
-        const centre = await db.collection('centres_oficials').findOne({ _id: codi });
-        if (centre) res.json({ nom: centre.nom });
-        else res.status(404).json({ error: 'Centre no trobat' });
-    } catch (error) { res.status(500).json({ error: 'Error' }); }
+        // Buscar por _id ya que en tu importador el _id es el código
+        const centre = await db.collection('centres_oficials').findOne({ _id: req.params.codi });
+        
+        if (centre) {
+            res.json(centre);
+        } else {
+            res.status(404).json({ message: 'Centre no trobat' });
+        }
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 });
 
 // RUTA PUT: /api/solicituds/:id
