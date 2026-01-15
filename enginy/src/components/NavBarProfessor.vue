@@ -55,21 +55,7 @@
               variant="text" 
               class="text-none font-weight-bold text-blue-darken-4 rounded-0 h-100 menu-btn"
             >
-              Crear Taller
-            </v-btn>
-            <v-btn 
-              to="/solicituds" 
-              variant="text" 
-              class="text-none font-weight-bold text-blue-darken-4 rounded-0 h-100 menu-btn"
-            >
-              Administrar Sol·licituds
-            </v-btn>
-            <v-btn 
-              to="/crearUsuaris" 
-              variant="text" 
-              class="text-none font-weight-bold text-blue-darken-4 rounded-0 h-100 menu-btn"
-            >
-              Crear Usuaris
+              Veure Sol·licituds
             </v-btn>
           </div>
         </v-container>

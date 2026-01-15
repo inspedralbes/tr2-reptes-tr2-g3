@@ -23,6 +23,8 @@ declare module 'vue-router/auto-routes' {
     '/CrearTaller': RouteRecordInfo<'/CrearTaller', '/CrearTaller', Record<never, never>, Record<never, never>>,
     '/CrearUsuaris': RouteRecordInfo<'/CrearUsuaris', '/CrearUsuaris', Record<never, never>, Record<never, never>>,
     '/Login': RouteRecordInfo<'/Login', '/Login', Record<never, never>, Record<never, never>>,
+    '/pagesProfessor/paginaPrincipalProfessor': RouteRecordInfo<'/pagesProfessor/paginaPrincipalProfessor', '/pagesProfessor/paginaPrincipalProfessor', Record<never, never>, Record<never, never>>,
+    '/pagesProfessor/TallersProfessor': RouteRecordInfo<'/pagesProfessor/TallersProfessor', '/pagesProfessor/TallersProfessor', Record<never, never>, Record<never, never>>,
     '/paginaPrincipal': RouteRecordInfo<'/paginaPrincipal', '/paginaPrincipal', Record<never, never>, Record<never, never>>,
     '/Registre': RouteRecordInfo<'/Registre', '/Registre', Record<never, never>, Record<never, never>>,
     '/Solicituds': RouteRecordInfo<'/Solicituds', '/Solicituds', Record<never, never>, Record<never, never>>,
@@ -58,6 +60,14 @@ declare module 'vue-router/auto-routes' {
     }
     'src/pages/Login.vue': {
       routes: '/Login'
+      views: never
+    }
+    'src/pages/pagesProfessor/paginaPrincipalProfessor.vue': {
+      routes: '/pagesProfessor/paginaPrincipalProfessor'
+      views: never
+    }
+    'src/pages/pagesProfessor/TallersProfessor.vue': {
+      routes: '/pagesProfessor/TallersProfessor'
       views: never
     }
     'src/pages/paginaPrincipal.vue': {
