@@ -11,7 +11,7 @@ function validarEnum(valor, permitidos, campo) {
     }
 }
 
-// --- CREAR USUARIO ---
+// --- CREAR USUARIO (MODIFICADO PARA ARREGLAR LOS NULL) ---
 async function createUsuari(data) {
     const db = await connectDB();
     validarEnum(data.rol, ROLS, 'rol');
@@ -24,20 +24,28 @@ async function createUsuari(data) {
         perfil: {}
     };
 
+    // --- CORRECCIÓN CLAVE ---
+    // Tu frontend envía los datos dentro de 'data.perfil'.
+    // Esta línea comprueba: ¿Existe data.perfil? Úsalo. Si no, usa data normal.
+    const datosOrigen = data.perfil || data; 
+
     if (data.rol === 'centre') {
         usuariDoc.perfil = {
-            codi_centre: data.codi_centre,
-            nom_oficial: data.nom_oficial,
-            adreça: data.adreça,
-            municipi: data.municipi
+            // Leemos de 'datosOrigen' en lugar de 'data'
+            codi_centre: datosOrigen.codi_centre,
+            nom_oficial: datosOrigen.nom_oficial,
+            adreça: datosOrigen.adreça,
+            municipi: datosOrigen.municipi
         };
     } else if (data.rol === 'professor') {
         if (!data.centre_id) throw new Error("Un profesor debe tener centre_id");
         usuariDoc.centre_id = new ObjectId(data.centre_id);
+        
         usuariDoc.perfil = {
-            nom: data.nom,
-            departament: data.departament,
-            disponibilitat: data.disponibilitat || []
+            // Leemos de 'datosOrigen' en lugar de 'data'
+            nom: datosOrigen.nom,
+            departament: datosOrigen.departament,
+            disponibilitat: datosOrigen.disponibilitat || []
         };
     }
 
@@ -81,7 +89,6 @@ async function createSollicitud(centreUserId, tallerId, data) {
         centre_id: new ObjectId(centreUserId),
         taller_id: new ObjectId(tallerId),
         estat: 'pendent',
-        // CORREGIDO: UNA SOLA L PARA QUE COINCIDA CON VUE
         data_solicitud: new Date(),
 
         codi_centre: data.codi_centre ? String(data.codi_centre).trim().padStart(8, '0') : null,
@@ -94,8 +101,6 @@ async function createSollicitud(centreUserId, tallerId, data) {
         checklist_seguiment: []
     };
 
-    // Mantenemos el nombre de la colección 'sollicituds' en la BD por seguridad,
-    // pero el campo JSON ahora es 'data_solicitud'
     const result = await db.collection('sollicituds').insertOne(solicitudDoc);
 
     // Restar plazas
@@ -161,7 +166,6 @@ async function getAllSolicitudes() {
         {
             $project: {
                 _id: 1,
-                // CORREGIDO: UNA SOLA L
                 data_solicitud: 1, 
                 estat: 1,
                 alumnes_previstos: 1,
@@ -184,7 +188,7 @@ async function getAllSolicitudes() {
                 }
             }
         },
-        // Ordenar por data_solicitud (una L)
+        // Ordenar por data_solicitud
         { $sort: { data_solicitud: -1 } }
     ]).toArray();
 }

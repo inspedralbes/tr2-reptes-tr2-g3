@@ -304,7 +304,7 @@ const loadingCentre = ref(false);
 const codiCentreProfesorInput = ref('');
 const nomCentreProfesorDisplay = ref('');
 
-// ESTADO DEL FORMULARIO
+// ESTAT DEL FORMULARI (es manté igual per a la UI)
 const form = reactive({
   email: '',
   password: '',
@@ -381,6 +381,7 @@ const buscarCentrePerProfessor = async (codi) => {
   }
 };
 
+// --- FUNCIÓ PRINCIPAL ACTUALITZADA ---
 const guardarUsuari = async () => {
   const { valid } = await formRef.value.validate();
   if (!valid) return;
@@ -393,37 +394,68 @@ const guardarUsuari = async () => {
   loading.value = true;
   
   try {
-    let payload = {
+    // 1. Construim el document (Igual que antes)
+    const payload = {
         email: form.email,
         password_hash: form.password, 
-        rol: form.rol
+        rol: form.rol,
+        perfil: {}
     };
 
     if (form.rol === 'centre') {
-        payload = { ...payload, ...form.centreData };
+        payload.perfil = {
+            codi_centre: form.centreData.codi_centre,
+            nom_oficial: form.centreData.nom_oficial,
+            adreça: form.centreData.adreça,
+            municipi: form.centreData.municipi
+        };
     } else if (form.rol === 'professor') {
-        payload = { ...payload, ...form.professorData };
+        // Asegúrate que centre_id es el ID de Mongo (string de 24 caracteres)
+        payload.centre_id = form.professorData.centre_id; 
+        payload.perfil = {
+            nom: form.professorData.nom,
+            departament: form.professorData.departament,
+            disponibilitat: form.professorData.disponibilitat || []
+        };
     }
 
-    console.log("Enviando Payload a Backend:", JSON.stringify(payload, null, 2));
-    
-    await new Promise(resolve => setTimeout(resolve, 1000)); 
+    console.log("Enviando...", payload); // Para depurar
+
+    // --- AQUÍ ESTÁ EL CAMBIO IMPORTANTE ---
+    // Descomenta y ajusta la URL a la de tu backend real
+    const response = await fetch('http://localhost:3000/api/usuaris', {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json' 
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+        // Si el backend devuelve error (ej: 400 o 500)
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Error al servidor");
+    }
+
+    const respuestaServidor = await response.json();
+    console.log("Usuario creado:", respuestaServidor);
+    // --------------------------------------
 
     snackbar.value = true;
     
+    // Opcional: Redirigir después de crear
     setTimeout(() => {
        // router.push('/admin/usuaris');
     }, 1500);
 
   } catch (error) {
-    console.error(error);
-    alert("Error creant l'usuari");
+    console.error("Error completo:", error);
+    alert("Error creant l'usuari: " + error.message);
   } finally {
     loading.value = false;
   }
 };
 </script>
-
 <style scoped>
 .text-primary-dark { color: #004B87; }
 

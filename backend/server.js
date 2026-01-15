@@ -3,12 +3,13 @@ const cors = require('cors');
 const { connectDB } = require('./db');
 const { ObjectId } = require('mongodb');
 
-// Importamos funciones
+// Importamos funciones (Asegúrate de que 'createUsuari' está en models.js)
 const { 
     createTaller, 
     createSollicitud, 
     getAllSolicitudes,
-    updateEstatSolicitud
+    updateEstatSolicitud,
+    createUsuari  // <--- NUEVO: Importamos la función para crear usuarios
 } = require('./models');
 
 const app = express();
@@ -61,7 +62,7 @@ app.post('/api/tallers', async (req, res) => {
     }
 });
 
-// --- RUTAS DE SOLICITUDES (CORREGIDAS A UNA 'L') ---
+// --- RUTAS DE SOLICITUDES ---
 
 // RUTA GET: /api/solicituds
 app.get('/api/solicituds', async (req, res) => {
@@ -105,24 +106,6 @@ app.post('/api/solicituds', async (req, res) => {
     }
 });
 
-// En tu server.js o routes.js
-app.get('/api/centres/:codi', async (req, res) => {
-    try {
-        const { connectDB } = require('./db');
-        const db = await connectDB();
-        // Buscar por _id ya que en tu importador el _id es el código
-        const centre = await db.collection('centres_oficials').findOne({ _id: req.params.codi });
-        
-        if (centre) {
-            res.json(centre);
-        } else {
-            res.status(404).json({ message: 'Centre no trobat' });
-        }
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
 // RUTA PUT: /api/solicituds/:id
 app.put('/api/solicituds/:id', async (req, res) => {
     try {
@@ -137,8 +120,42 @@ app.put('/api/solicituds/:id', async (req, res) => {
     }
 });
 
+// --- RUTAS DE CENTROS ---
+
+app.get('/api/centres/:codi', async (req, res) => {
+    try {
+        // Nota: connectDB ya está importado arriba, pero mantenemos tu lógica interna si prefieres
+        const db = await connectDB();
+        const centre = await db.collection('centres_oficials').findOne({ _id: req.params.codi });
+        
+        if (centre) {
+            res.json(centre);
+        } else {
+            res.status(404).json({ message: 'Centre no trobat' });
+        }
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// --- NUEVA RUTA: USUARIOS (ESTA FALTABA Y CAUSABA EL ERROR) ---
+app.post('/api/usuaris', async (req, res) => {
+    try {
+        console.log("Rebuda petició POST /api/usuaris:", req.body);
+        
+        // Llamamos a la función del modelo
+        const id = await createUsuari(req.body);
+        
+        res.status(201).json({ message: 'Usuari creat correctament', id });
+    } catch (error) {
+        console.error("Error creant usuari:", error);
+        res.status(400).json({ error: error.message || "Error desconegut creant usuari" });
+    }
+});
+
+// --- RUTAS DE DEBUG ---
+
 app.get('/api/debug-data', async (req, res) => {
-    const { connectDB } = require('./db');
     const db = await connectDB();
     
     const countCentros = await db.collection('centres_oficials').countDocuments();
@@ -157,12 +174,11 @@ app.get('/api/debug-data', async (req, res) => {
     });
 });
 
-// --- RUTA EXTRA PARA LIMPIAR SOLICITUDES ANTIGUAS ---
 app.get('/api/debug/reset-solicituds', async (req, res) => {
     const db = await connectDB();
     await db.collection('sollicituds').deleteMany({});
     console.log("Totes les sol·licituds han estat esborrades.");
-    res.send("<h1>Historial esborrat</h1><p>Totes les sol·licituds antigues s'han eliminat. <br>Torna a la web i crea'n una de nova: ara hauria de sortir el nom del centre.</p>");
+    res.send("<h1>Historial esborrat</h1><p>Totes les sol·licituds antigues s'han eliminat. <br>Torna a la web i crea'n una de nova.</p>");
 });
 
 app.listen(PORT, () => {
