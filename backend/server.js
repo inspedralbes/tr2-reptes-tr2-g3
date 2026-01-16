@@ -3,13 +3,15 @@ const cors = require('cors');
 const { connectDB } = require('./db');
 const { ObjectId } = require('mongodb');
 
-// Importamos funciones (Asegúrate de que 'createUsuari' está en models.js)
+// Importamos todas las funciones del modelo
 const { 
     createTaller, 
     createSollicitud, 
     getAllSolicitudes,
     updateEstatSolicitud,
-    createUsuari  // <--- NUEVO: Importamos la función para crear usuarios
+    createUsuari,          // <--- Importado
+    validarLogin,          // <--- Importado (NUEVO)
+    getAllTallersWithNames 
 } = require('./models');
 
 const app = express();
@@ -18,21 +20,61 @@ const PORT = 3000;
 app.use(cors());
 app.use(express.json());
 
-// Middleware de usuario simulado
-app.use(async (req, res, next) => {
-    req.user = { 
-        _id: '65a1b2c3d4e5f67890123456', 
-        rol: 'centre',
-        nom: 'Institut Test'
-    };
-    next();
+// 1. RUTA LOGIN
+app.post('/api/login', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        console.log(`Intento de login: ${email}`);
+
+        // Usamos la función simple (sin encriptar) que definimos en models.js
+        const user = await validarLogin(email, password);
+
+        if (user) {
+            res.json({
+                success: true,
+                message: "Login correcto",
+                user: {
+                    _id: user._id,
+                    email: user.email,
+                    rol: user.rol,
+                    perfil: user.perfil
+                }
+            });
+        } else {
+            res.status(401).json({ error: "Usuario o contraseña incorrectos" });
+        }
+    } catch (error) {
+        console.error("Error en login:", error);
+        res.status(500).json({ error: "Error del servidor" });
+    }
 });
 
-// --- RUTAS DE TALLERES ---
+// server.js (Verificación rápida)
+
+// ...
+
+// Esta ruta es la que usa tu formulario Vue
+app.post('/api/usuaris', async (req, res) => {
+    try {
+        console.log("Recibiendo datos de Admin:", req.body); // Verás los datos en la consola
+        const id = await createUsuari(req.body);
+        res.status(201).json({ message: 'Usuari creat correctament', id });
+    } catch (error) {
+        console.error("Error creando usuario:", error);
+        res.status(400).json({ error: error.message });
+    }
+});
+
+
+
+// ==========================================
+// RUTAS DE TALLERES
+// ==========================================
+
 app.get('/api/tallers', async (req, res) => {
     try {
-        const db = await connectDB();
-        const tallers = await db.collection('tallers').find({ actiu: true }).toArray();
+        // Usamos la función que trae los nombres de los centros
+        const tallers = await getAllTallersWithNames();
         res.json(tallers);
     } catch (error) {
         res.status(500).json({ error: 'Error obtenint tallers' });
@@ -47,7 +89,6 @@ app.get('/api/tallers/:id', async (req, res) => {
         if (!taller) return res.status(404).json({ error: 'Taller no trobat' });
         res.json(taller);
     } catch (error) {
-        console.error(error);
         res.status(500).json({ error: 'Error del servidor' });
     }
 });
@@ -57,19 +98,18 @@ app.post('/api/tallers', async (req, res) => {
         const id = await createTaller(req.body);
         res.status(201).json({ message: 'Taller creat', id });
     } catch (error) {
-        console.error("Error creant taller:", error);
         res.status(400).json({ error: error.message });
     }
 });
 
-// --- RUTAS DE SOLICITUDES ---
 
-// RUTA GET: /api/solicituds
+// ==========================================
+// RUTAS DE SOLICITUDES
+// ==========================================
+
 app.get('/api/solicituds', async (req, res) => {
     try {
-        console.log("--> Solicitando lista de solicitudes..."); 
         const solicitudes = await getAllSolicitudes();
-        console.log(`--> Enviando ${solicitudes.length} solicitudes al frontend.`);
         res.json(solicitudes);
     } catch (error) {
         console.error("Error al obtener solicitudes:", error);
@@ -77,21 +117,22 @@ app.get('/api/solicituds', async (req, res) => {
     }
 });
 
-// RUTA POST: /api/solicituds
 app.post('/api/solicituds', async (req, res) => {
     try {
-        console.log("Rebuda petició POST /api/solicituds:", req.body);
-        const { taller_id, alumnes_previstos, dia_preferit, observacions, codi_centre } = req.body;
+        console.log("Nueva solicitud:", req.body);
+        
+        // RECUPERAR ID DEL USUARIO
+        // 1. Si el frontend envía 'userId', lo usamos (Login real).
+        // 2. Si no, usamos un ID de prueba (Fallback por si acaso).
+        const userId = req.body.userId || '65a1b2c3d4e5f67890123456'; 
 
-        if (!codi_centre) {
-            console.warn("ALERTA: S'està creant una sol·licitud sense 'codi_centre'. Això provocarà 'Institut Desconegut'.");
-        }
+        const { taller_id, alumnes_previstos, dia_preferit, observacions, codi_centre } = req.body;
 
         if (!taller_id || !alumnes_previstos) {
             return res.status(400).json({ error: "Falten dades obligatòries" });
         }
 
-        const id = await createSollicitud(req.user._id, taller_id, {
+        const id = await createSollicitud(userId, taller_id, {
             alumnes_previstos,
             dia_preferit,
             observacions,
@@ -106,7 +147,6 @@ app.post('/api/solicituds', async (req, res) => {
     }
 });
 
-// RUTA PUT: /api/solicituds/:id
 app.put('/api/solicituds/:id', async (req, res) => {
     try {
         const { estat } = req.body;
@@ -120,11 +160,13 @@ app.put('/api/solicituds/:id', async (req, res) => {
     }
 });
 
-// --- RUTAS DE CENTROS ---
+
+// ==========================================
+// RUTAS DE CENTROS & DEBUG
+// ==========================================
 
 app.get('/api/centres/:codi', async (req, res) => {
     try {
-        // Nota: connectDB ya está importado arriba, pero mantenemos tu lógica interna si prefieres
         const db = await connectDB();
         const centre = await db.collection('centres_oficials').findOne({ _id: req.params.codi });
         
@@ -138,49 +180,13 @@ app.get('/api/centres/:codi', async (req, res) => {
     }
 });
 
-// --- NUEVA RUTA: USUARIOS (ESTA FALTABA Y CAUSABA EL ERROR) ---
-app.post('/api/usuaris', async (req, res) => {
-    try {
-        console.log("Rebuda petició POST /api/usuaris:", req.body);
-        
-        // Llamamos a la función del modelo
-        const id = await createUsuari(req.body);
-        
-        res.status(201).json({ message: 'Usuari creat correctament', id });
-    } catch (error) {
-        console.error("Error creant usuari:", error);
-        res.status(400).json({ error: error.message || "Error desconegut creant usuari" });
-    }
-});
-
-// --- RUTAS DE DEBUG ---
-
-app.get('/api/debug-data', async (req, res) => {
-    const db = await connectDB();
-    
-    const countCentros = await db.collection('centres_oficials').countDocuments();
-    const unCentro = await db.collection('centres_oficials').findOne({});
-    const unaSolicitud = await db.collection('sollicituds').findOne({}, { sort: { $natural: -1 } });
-    
-    res.json({
-        total_centros_excel: countCentros,
-        ejemplo_centro_excel: unCentro,
-        ultima_solicitud: {
-            id: unaSolicitud?._id,
-            codi_guardado: unaSolicitud?.codi_centre,
-            tipo_codi: typeof unaSolicitud?.codi_centre
-        },
-        coincide_tipo: unCentro && unaSolicitud ? (typeof unCentro._id === typeof unaSolicitud.codi_centre) : 'N/A'
-    });
-});
-
 app.get('/api/debug/reset-solicituds', async (req, res) => {
     const db = await connectDB();
     await db.collection('sollicituds').deleteMany({});
-    console.log("Totes les sol·licituds han estat esborrades.");
-    res.send("<h1>Historial esborrat</h1><p>Totes les sol·licituds antigues s'han eliminat. <br>Torna a la web i crea'n una de nova.</p>");
+    res.send("<h1>Historial esborrat</h1><p>Totes les sol·licituds s'han eliminat.</p>");
 });
 
+// Arrancar servidor
 app.listen(PORT, () => {
     console.log(`Servidor API escoltant a http://localhost:${PORT}`);
 });

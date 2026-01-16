@@ -19,15 +19,14 @@ declare module 'vue-router/auto-routes' {
    */
   export interface RouteNamedMap {
     '/': RouteRecordInfo<'/', '/', Record<never, never>, Record<never, never>>,
+    '/admin/CrearTaller': RouteRecordInfo<'/admin/CrearTaller', '/admin/CrearTaller', Record<never, never>, Record<never, never>>,
+    '/admin/CrearUsuaris': RouteRecordInfo<'/admin/CrearUsuaris', '/admin/CrearUsuaris', Record<never, never>, Record<never, never>>,
+    '/admin/Solicituds': RouteRecordInfo<'/admin/Solicituds', '/admin/Solicituds', Record<never, never>, Record<never, never>>,
     '/CrearSolicitud': RouteRecordInfo<'/CrearSolicitud', '/CrearSolicitud', Record<never, never>, Record<never, never>>,
-    '/CrearTaller': RouteRecordInfo<'/CrearTaller', '/CrearTaller', Record<never, never>, Record<never, never>>,
-    '/CrearUsuaris': RouteRecordInfo<'/CrearUsuaris', '/CrearUsuaris', Record<never, never>, Record<never, never>>,
     '/Login': RouteRecordInfo<'/Login', '/Login', Record<never, never>, Record<never, never>>,
     '/pagesProfessor/paginaPrincipalProfessor': RouteRecordInfo<'/pagesProfessor/paginaPrincipalProfessor', '/pagesProfessor/paginaPrincipalProfessor', Record<never, never>, Record<never, never>>,
     '/pagesProfessor/TallersProfessor': RouteRecordInfo<'/pagesProfessor/TallersProfessor', '/pagesProfessor/TallersProfessor', Record<never, never>, Record<never, never>>,
     '/paginaPrincipal': RouteRecordInfo<'/paginaPrincipal', '/paginaPrincipal', Record<never, never>, Record<never, never>>,
-    '/Registre': RouteRecordInfo<'/Registre', '/Registre', Record<never, never>, Record<never, never>>,
-    '/Solicituds': RouteRecordInfo<'/Solicituds', '/Solicituds', Record<never, never>, Record<never, never>>,
     '/Tallers': RouteRecordInfo<'/Tallers', '/Tallers', Record<never, never>, Record<never, never>>,
   }
 
@@ -46,16 +45,20 @@ declare module 'vue-router/auto-routes' {
       routes: '/'
       views: never
     }
+    'src/pages/admin/CrearTaller.vue': {
+      routes: '/admin/CrearTaller'
+      views: never
+    }
+    'src/pages/admin/CrearUsuaris.vue': {
+      routes: '/admin/CrearUsuaris'
+      views: never
+    }
+    'src/pages/admin/Solicituds.vue': {
+      routes: '/admin/Solicituds'
+      views: never
+    }
     'src/pages/CrearSolicitud.vue': {
       routes: '/CrearSolicitud'
-      views: never
-    }
-    'src/pages/CrearTaller.vue': {
-      routes: '/CrearTaller'
-      views: never
-    }
-    'src/pages/CrearUsuaris.vue': {
-      routes: '/CrearUsuaris'
       views: never
     }
     'src/pages/Login.vue': {
@@ -72,14 +75,6 @@ declare module 'vue-router/auto-routes' {
     }
     'src/pages/paginaPrincipal.vue': {
       routes: '/paginaPrincipal'
-      views: never
-    }
-    'src/pages/Registre.vue': {
-      routes: '/Registre'
-      views: never
-    }
-    'src/pages/Solicituds.vue': {
-      routes: '/Solicituds'
       views: never
     }
     'src/pages/Tallers.vue': {

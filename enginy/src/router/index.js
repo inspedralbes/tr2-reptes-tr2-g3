@@ -7,53 +7,86 @@
 // Composables
 import { createRouter, createWebHistory } from 'vue-router'
 
+// Importamos el Store de Pinia
+import { useAuthStore } from '@/stores/auth'
+
 import paginaPrincipal from '@/pages/paginaPrincipal.vue'
 import Tallers from '@/pages/Tallers.vue'
 import Login from '@/pages/Login.vue'
-import CrearTaller from '@/pages/CrearTaller.vue'
-import CrearSolicitud from '@/pages/CrearSolicitud.vue'
-import Solicituds  from '@/pages/Solicituds.vue' 
+import CrearTaller from '@/pages/admin/CrearTaller.vue'
+import CrearSolicitud from '@/pages/Instituts/CrearSolicitud.vue'
+import Solicituds  from '@/pages/admin/Solicituds.vue' 
 import CrearUsuaris from '@/pages/CrearUsuaris.vue'
+
 const routes = [
-  {
-    path: '/tallers',
-    name: 'Tallers',
-    component: Tallers
-  },
   {
     path: '/',
     name: 'paginaPrincipal',
-    component: paginaPrincipal
+    component: paginaPrincipal,
+    meta: { requiresAuth: false } // Pública
+  },
+  {
+    path: '/tallers',
+    name: 'Tallers',
+    component: Tallers,
+    meta: { requiresAuth: false } // Pública (Catálogo)
   },
   {
     path: '/login',
     name: 'Login',
-    component: Login
+    component: Login,
+    meta: { requiresAuth: false, guestOnly: true } // Solo para no logueados
   },
+  // --- RUTAS PROTEGIDAS (Requieren Login) ---
   {
     path: '/crearTaller',
     name: 'CrearTaller',
-    component: CrearTaller
+    component: CrearTaller,
+    meta: { requiresAuth: true }
   },
   {
     path: '/crearSolicitud/:id',
     name: 'CrearSolicitud',
-    component: CrearSolicitud
+    component: CrearSolicitud,
+    meta: { requiresAuth: true }
   },
   {
     path: '/solicituds',
     name: 'Solicituds',
-    component: Solicituds
+    component: Solicituds,
+    meta: { requiresAuth: true }
   },
   {
     path: '/crearUsuaris',
     name: 'CrearUsuaris',
-    component: CrearUsuaris
+    component: CrearUsuaris,
+    meta: { requiresAuth: true }
   }
 ]
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes,
+})
+
+// --- GUARDIA DE NAVEGACIÓN (Seguridad) ---
+router.beforeEach(async (to, from, next) => {
+  // Inicializamos el store dentro del guard para evitar errores de inicialización
+  const authStore = useAuthStore()
+
+  // 1. Si la ruta requiere autenticación y NO estamos logueados -> Login
+  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+    return next('/login')
+  }
+
+  // 2. Si la ruta es solo para invitados (Login) y SI estamos logueados -> Home
+  // (Para que no puedan volver al login si ya están dentro)
+  if (to.meta.guestOnly && authStore.isAuthenticated) {
+    return next('/')
+  }
+
+  // 3. Todo correcto, continuar
+  next()
 })
 
 // Workaround for https://github.com/vitejs/vite/issues/11804
