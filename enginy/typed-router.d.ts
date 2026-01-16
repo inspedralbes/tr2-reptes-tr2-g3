@@ -26,6 +26,7 @@ declare module 'vue-router/auto-routes' {
     '/Login': RouteRecordInfo<'/Login', '/Login', Record<never, never>, Record<never, never>>,
     '/pagesProfessor/paginaPrincipalProfessor': RouteRecordInfo<'/pagesProfessor/paginaPrincipalProfessor', '/pagesProfessor/paginaPrincipalProfessor', Record<never, never>, Record<never, never>>,
     '/pagesProfessor/TallersProfessor': RouteRecordInfo<'/pagesProfessor/TallersProfessor', '/pagesProfessor/TallersProfessor', Record<never, never>, Record<never, never>>,
+    '/pagesProfessor/veureSolicituds': RouteRecordInfo<'/pagesProfessor/veureSolicituds', '/pagesProfessor/veureSolicituds', Record<never, never>, Record<never, never>>,
     '/paginaPrincipal': RouteRecordInfo<'/paginaPrincipal', '/paginaPrincipal', Record<never, never>, Record<never, never>>,
     '/Tallers': RouteRecordInfo<'/Tallers', '/Tallers', Record<never, never>, Record<never, never>>,
   }
@@ -71,6 +72,10 @@ declare module 'vue-router/auto-routes' {
     }
     'src/pages/pagesProfessor/TallersProfessor.vue': {
       routes: '/pagesProfessor/TallersProfessor'
+      views: never
+    }
+    'src/pages/pagesProfessor/veureSolicituds.vue': {
+      routes: '/pagesProfessor/veureSolicituds'
       views: never
     }
     'src/pages/paginaPrincipal.vue': {

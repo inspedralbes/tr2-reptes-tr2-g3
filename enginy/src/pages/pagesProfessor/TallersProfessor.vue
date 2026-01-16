@@ -1,5 +1,5 @@
 <template>
-  <NavBar />
+  <NavBarProfessor />
 
   <v-main class="bg-grey-lighten-5" style="min-height: 100vh; padding-top: 120px;">
     
@@ -145,7 +145,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import NavBar from '@/components/NavBarProfessor.vue';
+import NavBarProfessor from '../../components/NavBarProfessor.vue';
 
 const router = useRouter();
 const cerca = ref('');
