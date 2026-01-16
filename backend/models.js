@@ -7,11 +7,14 @@ const ESTATS_SOL = ['pendent', 'assignat', 'finalitzat', 'rebutjada'];
 
 function validarEnum(valor, permitidos, campo) {
     if (!permitidos.includes(valor)) {
-        throw new Error(` Error en '${campo}': Valor '${valor}' no válido.`);
+        throw new Error(`Error en '${campo}': Valor '${valor}' no válido.`);
     }
 }
 
-// --- CREAR USUARIO (MODIFICADO PARA ARREGLAR LOS NULL) ---
+// ---------------------------------------------------------
+// SECCIÓ 1: CREACIÓ (CRUD: CREATE)
+// ---------------------------------------------------------
+
 async function createUsuari(data) {
     const db = await connectDB();
     validarEnum(data.rol, ROLS, 'rol');
@@ -21,17 +24,13 @@ async function createUsuari(data) {
         password_hash: data.password_hash || "hash_simulado_123",
         rol: data.rol,
         data_registre: new Date(),
-        perfil: {}
+        perfil: {} // Polimorfisme: estructura variable segons el rol
     };
 
-    // --- CORRECCIÓN CLAVE ---
-    // Tu frontend envía los datos dentro de 'data.perfil'.
-    // Esta línea comprueba: ¿Existe data.perfil? Úsalo. Si no, usa data normal.
     const datosOrigen = data.perfil || data; 
 
     if (data.rol === 'centre') {
         usuariDoc.perfil = {
-            // Leemos de 'datosOrigen' en lugar de 'data'
             codi_centre: datosOrigen.codi_centre,
             nom_oficial: datosOrigen.nom_oficial,
             adreça: datosOrigen.adreça,
@@ -42,7 +41,6 @@ async function createUsuari(data) {
         usuariDoc.centre_id = new ObjectId(data.centre_id);
         
         usuariDoc.perfil = {
-            // Leemos de 'datosOrigen' en lugar de 'data'
             nom: datosOrigen.nom,
             departament: datosOrigen.departament,
             disponibilitat: datosOrigen.disponibilitat || []
@@ -53,7 +51,6 @@ async function createUsuari(data) {
     return result.insertedId;
 }
 
-// --- CREAR TALLER ---
 async function createTaller(data) {
     const db = await connectDB();
     validarEnum(data.modalitat, MODALITATS, 'modalitat');
@@ -67,14 +64,14 @@ async function createTaller(data) {
         places_totals: parseInt(data.places_totals),
         places_disponibles: parseInt(data.places_totals),
         actiu: true,
-        detalls_tecnics: data.detalls_tecnics || {}
+        // [CHECKLIST] 2. Model: Objectes imbricats i configuracions variables
+        detalls_tecnics: data.detalls_tecnics || {} 
     };
 
     const result = await db.collection('tallers').insertOne(tallerDoc);
     return result.insertedId;
 }
 
-// --- CREAR SOLICITUD ---
 async function createSollicitud(centreUserId, tallerId, data) {
     const db = await connectDB();
 
@@ -90,7 +87,6 @@ async function createSollicitud(centreUserId, tallerId, data) {
         taller_id: new ObjectId(tallerId),
         estat: 'pendent',
         data_solicitud: new Date(),
-
         codi_centre: data.codi_centre ? String(data.codi_centre).trim().padStart(8, '0') : null,
         alumnes_previstos: parseInt(data.alumnes_previstos),
         preferencies: {
@@ -98,12 +94,12 @@ async function createSollicitud(centreUserId, tallerId, data) {
             observacions: data.observacions
         },
         professors_assignats_ids: [],
-        checklist_seguiment: []
+        checklist_seguiment: [] // Array dinàmic per al seguiment
     };
 
     const result = await db.collection('sollicituds').insertOne(solicitudDoc);
 
-    // Restar plazas
+    // [CHECKLIST] 3. CRUD: Operació atòmica $inc per evitar Race Conditions
     await db.collection('tallers').updateOne(
         { _id: new ObjectId(tallerId) },
         { $inc: { places_disponibles: -parseInt(data.alumnes_previstos) } }
@@ -124,12 +120,14 @@ async function createValoracio(sollicitudId, tallerId, tipoUsuario, respostes) {
     return await db.collection('valoracions').insertOne(valoracioDoc);
 }
 
-// --- GET ALL SOLICITUDES ---
+// ---------------------------------------------------------
+// SECCIÓ 2: LECTURA I JOINS (CRUD: READ)
+// ---------------------------------------------------------
+
 async function getAllSolicitudes() {
     const db = await connectDB();
-
+    // [CHECKLIST] 5. Agregacions: Utilització de pipelines amb $lookup (Joins)
     return await db.collection('sollicituds').aggregate([
-        // 1. Unir con la colección de usuarios
         {
             $lookup: {
                 from: 'usuaris',
@@ -139,8 +137,6 @@ async function getAllSolicitudes() {
             }
         },
         { $unwind: { path: '$usuario_info', preserveNullAndEmptyArrays: true } },
-
-        // 2. Unir con 'centres_oficials'
         {
             $lookup: {
                 from: 'centres_oficials',
@@ -150,8 +146,6 @@ async function getAllSolicitudes() {
             }
         },
         { $unwind: { path: '$dades_oficials', preserveNullAndEmptyArrays: true } },
-
-        // 3. Unir con talleres
         {
             $lookup: {
                 from: 'tallers',
@@ -161,60 +155,31 @@ async function getAllSolicitudes() {
             }
         },
         { $unwind: { path: '$taller_info', preserveNullAndEmptyArrays: true } },
-
-        // 4. Proyección
         {
             $project: {
                 _id: 1,
                 data_solicitud: 1, 
                 estat: 1,
                 alumnes_previstos: 1,
-                preferencies: 1,
-
+                checklist_seguiment: 1, // Important per veure l'array
                 centre_info: {
                     nom_oficial: { 
                         $ifNull: [
                             '$dades_oficials.nom', 
                             '$usuario_info.perfil.nom_oficial', 
-                            { $concat: ["Institut Desconegut (", { $ifNull: ["$codi_centre", "Sense Codi"] }, ")"] }
+                            "Centre Desconegut"
                         ] 
                     },
                     codi: '$codi_centre',
                     email: '$usuario_info.email'
                 },
-
-                taller_id: {
-                    $ifNull: ['$taller_info', { nom: 'Taller Eliminat' }]
-                }
+                taller_nom: '$taller_info.nom'
             }
         },
-        // Ordenar por data_solicitud
         { $sort: { data_solicitud: -1 } }
     ]).toArray();
 }
 
-async function updateEstatSolicitud(id, nuevoEstado) {
-    const db = await connectDB();
-    validarEnum(nuevoEstado, ESTATS_SOL, 'estat');
-
-    const solicitud = await db.collection('sollicituds').findOne({ _id: new ObjectId(id) });
-    if (!solicitud) throw new Error("No existe la solicitud");
-
-    if (nuevoEstado === 'rebutjada' && solicitud.estat !== 'rebutjada') {
-        await db.collection('tallers').updateOne(
-            { _id: solicitud.taller_id },
-            { $inc: { places_disponibles: solicitud.alumnes_previstos } }
-        );
-    }
-
-    const result = await db.collection('sollicituds').updateOne(
-        { _id: new ObjectId(id) },
-        { $set: { estat: nuevoEstado } }
-    );
-    return result;
-}
-
-// Nueva función para obtener talleres con nombres (Catálogo)
 async function getAllTallersWithNames() {
     const db = await connectDB();
     return await db.collection('tallers').aggregate([
@@ -232,13 +197,140 @@ async function getAllTallersWithNames() {
                 _id: 1,
                 codi: 1,
                 nom: 1,
-                imatge: 1,
                 modalitat: 1,
-                descripcio: 1,
                 places_disponibles: 1,
                 places_totals: 1,
-                detalls_tecnics: 1,
                 nom_institut: { $ifNull: ['$info_centre.nom', 'Institut Públic'] }
+            }
+        }
+    ]).toArray();
+}
+
+// ---------------------------------------------------------
+// SECCIÓ 3: ACTUALITZACIÓ I ARRAYS (CRUD: UPDATE)
+// ---------------------------------------------------------
+
+async function updateEstatSolicitud(id, nuevoEstado) {
+    const db = await connectDB();
+    validarEnum(nuevoEstado, ESTATS_SOL, 'estat');
+
+    const solicitud = await db.collection('sollicituds').findOne({ _id: new ObjectId(id) });
+    if (!solicitud) throw new Error("No existe la solicitud");
+
+    // Si es rebutja, tornem les places
+    if (nuevoEstado === 'rebutjada' && solicitud.estat !== 'rebutjada') {
+        await db.collection('tallers').updateOne(
+            { _id: solicitud.taller_id },
+            { $inc: { places_disponibles: solicitud.alumnes_previstos } }
+        );
+    }
+
+    return await db.collection('sollicituds').updateOne(
+        { _id: new ObjectId(id) },
+        { $set: { estat: nuevoEstado } }
+    );
+}
+
+// [CHECKLIST] 3. CRUD: $push per afegir a array
+async function addPasChecklist(sollicitudId, pas, responsable) {
+    const db = await connectDB();
+    return await db.collection('sollicituds').updateOne(
+        { _id: new ObjectId(sollicitudId) },
+        { 
+            $push: { 
+                checklist_seguiment: { 
+                    pas_nom: pas, 
+                    data_completat: new Date(), 
+                    fet: true,
+                    responsable: responsable 
+                } 
+            } 
+        }
+    );
+}
+
+// ---------------------------------------------------------
+// SECCIÓ 4: ESBORRAT (CRUD: DELETE) - REQUISIT FALTANT
+// ---------------------------------------------------------
+
+// [CHECKLIST] 3. CRUD: deleteOne amb verificacions prèvies
+async function deleteSollicitud(id) {
+    const db = await connectDB();
+    const objectId = new ObjectId(id);
+
+    // 1. Verificació
+    const solicitud = await db.collection('sollicituds').findOne({ _id: objectId });
+    if (!solicitud) throw new Error("Sol·licitud no trobada");
+    if (solicitud.estat === 'finalitzat') throw new Error("No es pot esborrar una sol·licitud ja finalitzada.");
+
+    // 2. Retorn de places si la sol·licitud ocupava lloc
+    if (sollicitud.estat === 'pendent' || solicitud.estat === 'assignat') {
+        await db.collection('tallers').updateOne(
+            { _id: solicitud.taller_id },
+            { $inc: { places_disponibles: solicitud.alumnes_previstos } }
+        );
+    }
+
+    // 3. Esborrat real
+    return await db.collection('sollicituds').deleteOne({ _id: objectId });
+}
+
+// ---------------------------------------------------------
+// SECCIÓ 5: CONSULTES AVANÇADES I ESTADÍSTIQUES
+// ---------------------------------------------------------
+
+// [CHECKLIST] 4. Consultes Avançades: $elemMatch i Dot Notation
+async function getSolicitudsAmbPasCompletat(nomPas) {
+    const db = await connectDB();
+    return await db.collection('sollicituds').find({
+        checklist_seguiment: {
+            $elemMatch: {
+                pas_nom: nomPas,
+                fet: true
+            }
+        }
+    }).toArray();
+}
+
+// [CHECKLIST] 5. Agregacions: Estadístiques per estat ($group + $sum)
+async function getStatsSollicituds() {
+    const db = await connectDB();
+    return await db.collection('sollicituds').aggregate([
+        {
+            $group: {
+                _id: "$estat", 
+                total_sollicituds: { $sum: 1 },
+                total_alumnes: { $sum: "$alumnes_previstos" }
+            }
+        }
+    ]).toArray();
+}
+
+// [CHECKLIST] 5. Agregacions: Tallers més demandats (Complexa)
+async function getTopTallers() {
+    const db = await connectDB();
+    return await db.collection('sollicituds').aggregate([
+        {
+            $group: {
+                _id: "$taller_id",
+                vegades_sollicitat: { $sum: 1 }
+            }
+        },
+        { $sort: { vegades_sollicitat: -1 } }, // Ordena descendent
+        { $limit: 3 }, // Top 3
+        // Lookup per obtenir el nom del taller a partir de la ID agrupada
+        {
+            $lookup: {
+                from: 'tallers',
+                localField: '_id',
+                foreignField: '_id',
+                as: 'info'
+            }
+        },
+        {
+            $project: {
+                nom_taller: { $arrayElemAt: ["$info.nom", 0] },
+                vegades_sollicitat: 1
             }
         }
     ]).toArray();
@@ -250,6 +342,11 @@ module.exports = {
     createSollicitud,
     createValoracio,
     getAllSolicitudes,
+    getAllTallersWithNames,
     updateEstatSolicitud,
-    getAllTallersWithNames
+    addPasChecklist,       // NOU
+    deleteSollicitud,      // NOU (Delete)
+    getStatsSollicituds,   // NOU (Stats)
+    getTopTallers,         // NOU (Stats)
+    getSolicitudsAmbPasCompletat // NOU (Query array)
 };
