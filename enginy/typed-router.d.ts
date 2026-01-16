@@ -22,7 +22,7 @@ declare module 'vue-router/auto-routes' {
     '/admin/CrearTaller': RouteRecordInfo<'/admin/CrearTaller', '/admin/CrearTaller', Record<never, never>, Record<never, never>>,
     '/admin/CrearUsuaris': RouteRecordInfo<'/admin/CrearUsuaris', '/admin/CrearUsuaris', Record<never, never>, Record<never, never>>,
     '/admin/Solicituds': RouteRecordInfo<'/admin/Solicituds', '/admin/Solicituds', Record<never, never>, Record<never, never>>,
-    '/CrearSolicitud': RouteRecordInfo<'/CrearSolicitud', '/CrearSolicitud', Record<never, never>, Record<never, never>>,
+    '/Instituts/CrearSolicitud': RouteRecordInfo<'/Instituts/CrearSolicitud', '/Instituts/CrearSolicitud', Record<never, never>, Record<never, never>>,
     '/Login': RouteRecordInfo<'/Login', '/Login', Record<never, never>, Record<never, never>>,
     '/pagesProfessor/paginaPrincipalProfessor': RouteRecordInfo<'/pagesProfessor/paginaPrincipalProfessor', '/pagesProfessor/paginaPrincipalProfessor', Record<never, never>, Record<never, never>>,
     '/pagesProfessor/TallersProfessor': RouteRecordInfo<'/pagesProfessor/TallersProfessor', '/pagesProfessor/TallersProfessor', Record<never, never>, Record<never, never>>,
@@ -58,8 +58,8 @@ declare module 'vue-router/auto-routes' {
       routes: '/admin/Solicituds'
       views: never
     }
-    'src/pages/CrearSolicitud.vue': {
-      routes: '/CrearSolicitud'
+    'src/pages/Instituts/CrearSolicitud.vue': {
+      routes: '/Instituts/CrearSolicitud'
       views: never
     }
     'src/pages/Login.vue': {
