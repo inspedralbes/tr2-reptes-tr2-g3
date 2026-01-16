@@ -1,6 +1,6 @@
 <template>
-    <NavBar />
-    
+    <NavBarProfessor />
+
     <v-container class="mx-auto px-4" style="max-width: 1000px; margin-top: 120px;">
         
         <h1 class="text-center font-weight-bold mb-6" style="color: #00426B;">Enginy</h1>
@@ -31,5 +31,5 @@ p { font-size: 1.15rem; color: #666666; line-height: 1.6; }
 </style>
 
 <script setup>
-    import NavBar from '@/components/NavBarProfessor.vue';
+    import NavBarProfessor from '../../components/NavBarProfessor.vue';
 </script>
