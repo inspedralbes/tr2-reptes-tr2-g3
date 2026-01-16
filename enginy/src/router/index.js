@@ -16,7 +16,7 @@ import Login from '@/pages/Login.vue'
 import CrearTaller from '@/pages/admin/CrearTaller.vue'
 import CrearSolicitud from '@/pages/Instituts/CrearSolicitud.vue'
 import Solicituds  from '@/pages/admin/Solicituds.vue' 
-import CrearUsuaris from '@/pages/CrearUsuaris.vue'
+import CrearUsuaris from '@/pages/admin/CrearUsuaris.vue'
 import paginaPrincipalProfessor from '@/pages/pagesProfessor/paginaPrincipalProfessor.vue'
 import TallersProfessor from '@/pages/pagesProfessor/TallersProfessor.vue'
 import NavBarProfessor from '@/components/NavBarProfessor.vue'
@@ -26,27 +26,26 @@ const routes = [
   {
     path: '/veureSolicituds',
     name: 'veureSolicituds',
-    component: veureSolicituds
+    component: veureSolicituds,
+    meta: { requiresAuth: true }
   },
   {
     path: '/navBarProfessor',
     name: 'NavBarProfessor',
-    component: NavBarProfessor
+    component: NavBarProfessor,
+    meta: { requiresAuth: true }
   },
   {
     path: '/tallersProfessor',
     name: 'TallersProfessor',
-    component: TallersProfessor
+    component: TallersProfessor,
+    meta: { requiresAuth: true }
   },
   {
     path: '/paginaPrincipalProfessor',
     name: 'paginaPrincipalProfessor',
-    component: paginaPrincipalProfessor
-  },
-  {
-    path: '/tallers',
-    name: 'Tallers',
-    component: Tallers
+    component: paginaPrincipalProfessor,
+    meta: { requiresAuth: true }
   },
   {
     path: '/',
