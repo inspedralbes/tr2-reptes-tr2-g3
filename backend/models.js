@@ -1,5 +1,6 @@
 const { ObjectId } = require('mongodb');
 const { connectDB } = require('./db');
+const bcrypt = require('bcrypt');
 
 const ROLS = ['admin', 'centre', 'professor'];
 const MODALITATS = ['A', 'B', 'C'];
@@ -19,7 +20,8 @@ async function validarLogin(email, passwordInput) {
     if (!user) return null; 
 
     // Compara lo que escribe el usuario con lo guardado por el Admin
-    if (user.password_hash === passwordInput) {
+    const match = await bcrypt.compare(passwordInput, user.password_hash);
+    if (match) {
         return user;
     }
     return null; 
@@ -33,10 +35,13 @@ async function createUsuari(data) {
     validarEnum(data.rol, ROLS, 'rol');
 
     // 2. Preparamos el documento base
+    const salt = await bcrypt.genSalt(10);
+    const password_hash = await bcrypt.hash(data.password_hash || "123456", salt);
+
     let usuariDoc = {
         email: data.email,
         // Tu formulario Vue envía 'password_hash' (con la clave del input). Lo guardamos tal cual.
-        password_hash: data.password_hash || "123456", 
+        password_hash: password_hash, 
         rol: data.rol,
         data_registre: new Date(),
         // Tu formulario Vue YA envía el perfil montado, así que lo usamos directo
