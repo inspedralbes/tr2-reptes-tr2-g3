@@ -1,11 +1,13 @@
 const { ObjectId } = require('mongodb');
 const { connectDB } = require('./db');
-const bcrypt = require('bcrypt');
 
 const ROLS = ['admin', 'centre', 'professor'];
 const MODALITATS = ['A', 'B', 'C'];
 const ESTATS_SOL = ['pendent', 'assignat', 'finalitzat', 'rebutjada'];
+// Change this:
 
+// To this:
+const bcrypt = require('bcryptjs');
 function validarEnum(valor, permitidos, campo) {
     if (!permitidos.includes(valor)) {
         throw new Error(` Error en '${campo}': Valor '${valor}' no válido.`);
