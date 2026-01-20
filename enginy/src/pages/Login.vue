@@ -127,21 +127,21 @@ import { useAuthStore } from '@/stores/auth'; // <--- IMPORTAMOS PINIA STORE
 const router = useRouter();
 const authStore = useAuthStore(); // <--- INICIALIZAMOS EL STORE
 
-const emailInput = ref('');
-const passwordInput = ref('');
+const email = ref('');
+const password= ref('');
 const visible = ref(false);
 const loading = ref(false);
 const error = ref('');
 
 const handleLogin = async () => {
-  if (!emailInput.value || !passwordInput.value) return;
+  if (!email.value || !password .value) return;
 
   loading.value = true;
   error.value = '';
 
   try {
     // LLAMAMOS A LA ACCIÓN DEL STORE
-    const user = await authStore.login(emailInput.value, passwordInput.value);
+    const user = await authStore.login(email.value, password.value);
     
     // Redirigir segons el rol de l'usuari
     const rol = authStore.user?.rol;
