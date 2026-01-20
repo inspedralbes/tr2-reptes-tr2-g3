@@ -127,26 +127,39 @@ import { useAuthStore } from '@/stores/auth'; // <--- IMPORTAMOS PINIA STORE
 const router = useRouter();
 const authStore = useAuthStore(); // <--- INICIALIZAMOS EL STORE
 
-const email = ref('');
-const password = ref('');
+const emailInput = ref('');
+const passwordInput = ref('');
 const visible = ref(false);
 const loading = ref(false);
-const errorMessage = ref('');
+const error = ref('');
 
 const handleLogin = async () => {
-  if (!email.value || !password.value) return;
+  if (!emailInput.value || !passwordInput.value) return;
 
   loading.value = true;
-  errorMessage.value = '';
+  error.value = '';
 
   try {
     // LLAMAMOS A LA ACCIÓN DEL STORE
-    await authStore.login(email.value, password.value);
+    const user = await authStore.login(emailInput.value, passwordInput.value);
     
     // Si no da error, redirigimos
-    router.push('/'); 
-  } catch (error) {
-    errorMessage.value = error.message;
+    switch (user.rol) {
+      case 'admin':
+        router.push('/admin/solicituds');
+        break;
+      case 'centre':
+        router.push('/paginaPrincipal');
+        break;
+      case 'professor':
+        router.push('/professor/paginaPrincipal');
+        break;
+      default:
+        router.push('/');
+        break;
+    }
+  } catch (err) {
+    error.value = err.message;
   } finally {
     loading.value = false;
   }

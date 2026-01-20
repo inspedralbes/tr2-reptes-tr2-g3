@@ -40,7 +40,7 @@ export const useAuthStore = defineStore('auth', {
         // 2. Guardamos en localStorage para persistencia
         localStorage.setItem('user', JSON.stringify(data.user));
 
-        return true; // Indicamos que fue bien
+        return data.user; // Indicamos que fue bien
       } catch (error) {
         console.error(error);
         throw error; // Lanzamos el error para que lo muestre el componente
