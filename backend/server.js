@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const { connectDB } = require('./db');
 const { ObjectId } = require('mongodb');
-
+const bcrypt = require('bcryptjs');
 // Importamos todas las funciones del modelo
 const { 
     createTaller, 

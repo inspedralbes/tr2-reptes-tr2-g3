@@ -1,63 +1,68 @@
 const { ObjectId } = require('mongodb');
 const { connectDB } = require('./db');
+const bcrypt = require('bcryptjs'); // <--- CORRECTO
 
-const ROLS = ['admin', 'centre', 'professor'];
+const ROLS = ['admin', 'centre', 'professor', 'institut']; // Añadido 'institut' por si acaso
 const MODALITATS = ['A', 'B', 'C'];
 const ESTATS_SOL = ['pendent', 'assignat', 'finalitzat', 'rebutjada'];
-// Change this:
 
-// To this:
-const bcrypt = require('bcryptjs');
 function validarEnum(valor, permitidos, campo) {
     if (!permitidos.includes(valor)) {
-        throw new Error(` Error en '${campo}': Valor '${valor}' no válido.`);
+        throw new Error(`Error en '${campo}': Valor '${valor}' no válido.`);
     }
 }
 
-// --- VALIDAR LOGIN (SIMPLE) ---
+// --- VALIDAR LOGIN (CORREGIDO) ---
 async function validarLogin(email, passwordInput) {
     const db = await connectDB();
     const user = await db.collection('usuaris').findOne({ email: email });
 
     if (!user) return null; 
 
-    // Compara lo que escribe el usuario con lo guardado por el Admin
-    const match = await bcrypt.compare(passwordInput, user.password_hash);
+    // Comparamos la contraseña que escribe el usuario con la encriptada en BD
+    // Nota: Guardaremos el campo en la BD como 'password' para simplificar
+    const match = await bcrypt.compare(passwordInput, user.password);
+    
     if (match) {
         return user;
     }
     return null; 
 }
 
-// --- CREAR USUARIO (AJUSTADO AL PANEL ADMIN) ---
+// --- CREAR USUARIO (CORREGIDO) ---
 async function createUsuari(data) {
     const db = await connectDB();
     
-    // 1. Validamos el Rol
-    validarEnum(data.rol, ROLS, 'rol');
+    // 1. Validamos si el email ya existe
+    const existe = await db.collection('usuaris').findOne({ email: data.email });
+    if (existe) throw new Error("El email ya está registrado");
 
-    // 2. Preparamos el documento base
+    // 2. Validamos el Rol
+    // Si no viene rol, asignamos 'institut' o 'centre' por defecto
+    const rol = data.rol || 'institut'; 
+    validarEnum(rol, ROLS, 'rol');
+
+    // 3. Encriptar contraseña
+    // FIX: El frontend envía 'password', no 'password_hash'
+    const rawPassword = data.password || "123456"; 
     const salt = await bcrypt.genSalt(10);
-    const password_hash = await bcrypt.hash(data.password_hash || "123456", salt);
+    const passwordEncrypted = await bcrypt.hash(rawPassword, salt);
 
     let usuariDoc = {
         email: data.email,
-        // Tu formulario Vue envía 'password_hash' (con la clave del input). Lo guardamos tal cual.
-        password_hash: password_hash, 
-        rol: data.rol,
+        password: passwordEncrypted, // Guardamos como 'password'
+        rol: rol,
         data_registre: new Date(),
-        // Tu formulario Vue YA envía el perfil montado, así que lo usamos directo
         perfil: data.perfil || {} 
     };
 
-    // 3. Caso especial: Profesor necesita centre_id
-    if (data.rol === 'professor') {
+    // 4. Caso especial: Profesor necesita centre_id
+    if (rol === 'professor') {
         if (!data.centre_id) throw new Error("Un profesor debe tener centre_id");
-        // Convertimos el string que envía Vue a ObjectId de Mongo
         usuariDoc.centre_id = new ObjectId(data.centre_id);
     }
 
-    // 4. Insertar en BDD
+    // 5. Insertar en BDD
     const result = await db.collection('usuaris').insertOne(usuariDoc);
     return result.insertedId;
 }
@@ -240,7 +245,7 @@ async function getAllTallersWithNames() {
 }
 
 module.exports = {
-    validarLogin, // <--- IMPORTANTE: ESTO NUEVO
+    validarLogin, 
     createUsuari,
     createTaller,
     createSollicitud,
