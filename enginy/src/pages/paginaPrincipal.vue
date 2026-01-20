@@ -1,5 +1,8 @@
 <template>
-    <NavBar />
+    <!-- Renderizado condicional del Navbar -->
+    <NavBar v-if="authStore.esAdmin" />
+    <NavBarCentre v-if="authStore.esCentre" />
+    <NavBarProfessor v-if="authStore.esProfessor" />
     
     <v-container class="mx-auto px-4" style="max-width: 1000px; margin-top: 120px;">
         
@@ -31,5 +34,10 @@ p { font-size: 1.15rem; color: #666666; line-height: 1.6; }
 </style>
 
 <script setup>
+    import { useAuthStore } from '@/stores/auth';
     import NavBar from '@/components/NavBar.vue';
+    import NavBarCentre from '@/components/NavBarCentre.vue';
+    import NavBarProfessor from '@/components/NavBarProfessor.vue';
+
+    const authStore = useAuthStore();
 </script>
