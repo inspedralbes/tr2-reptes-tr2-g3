@@ -27,25 +27,25 @@ const routes = [
     path: '/veureSolicituds',
     name: 'veureSolicituds',
     component: veureSolicituds,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, role: 'admin' }
   },
   {
     path: '/navBarProfessor',
     name: 'NavBarProfessor',
     component: NavBarProfessor,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, role: 'professor' }
   },
   {
     path: '/tallersProfessor',
     name: 'TallersProfessor',
     component: TallersProfessor,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, role: 'professor' }
   },
   {
     path: '/paginaPrincipalProfessor',
     name: 'paginaPrincipalProfessor',
     component: paginaPrincipalProfessor,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, role: 'professor' }
   },
   {
     path: '/',
@@ -57,7 +57,7 @@ const routes = [
     path: '/tallers',
     name: 'Tallers',
     component: Tallers,
-    meta: { requiresAuth: false } // Pública (Catálogo)
+    meta: { requiresAuth: true } // Pública (Catálogo)
   },
   {
     path: '/login',
@@ -70,25 +70,25 @@ const routes = [
     path: '/crearTaller',
     name: 'CrearTaller',
     component: CrearTaller,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, role: 'admin' }
   },
   {
     path: '/crearSolicitud/:id',
     name: 'CrearSolicitud',
     component: CrearSolicitud,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, role: 'centre' }
   },
   {
     path: '/solicituds',
     name: 'Solicituds',
     component: Solicituds,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, role: 'admin' }
   },
   {
     path: '/crearUsuaris',
     name: 'CrearUsuaris',
     component: CrearUsuaris,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, role: 'admin' }
   }
 ]
 
@@ -102,18 +102,32 @@ router.beforeEach(async (to, from, next) => {
   // Inicializamos el store dentro del guard para evitar errores de inicialización
   const authStore = useAuthStore()
 
+  // Obtenemos el rol del usuario (asumiendo que está en authStore.user.role)
+  const userRole = authStore.user?.role
+
   // 1. Si la ruta requiere autenticación y NO estamos logueados -> Login
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     return next('/login')
   }
 
-  // 2. Si la ruta es solo para invitados (Login) y SI estamos logueados -> Home
-  // (Para que no puedan volver al login si ya están dentro)
+  // 2. Si la ruta es solo para invitados (Login) y SI estamos logueados -> Redirigir según rol
   if (to.meta.guestOnly && authStore.isAuthenticated) {
+    if (userRole === 'professor') return next('/paginaPrincipalProfessor')
+    if (userRole === 'admin') return next('/solicituds') // O la home de admin
     return next('/')
   }
 
-  // 3. Todo correcto, continuar
+  // 3. Control de Acceso por Rol (RBAC)
+  if (to.meta.role && authStore.isAuthenticated) {
+    if (to.meta.role !== userRole) {
+      if (userRole === 'professor') return next('/paginaPrincipalProfessor')
+      if (userRole === 'admin') return next('/solicituds')
+      return next('/')
+    }
+  }
+
+
+  // 4. Todo correcto, continuar
   next()
 })
 

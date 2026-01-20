@@ -41,7 +41,7 @@
           <div class="mb-5">
             <div class="text-caption font-weight-bold text-grey-darken-2 mb-1 ml-1">Correu electrònic</div>
             <v-text-field
-              v-model="emailInput"
+              v-model="email"
               placeholder="Ex: usuari@exemple.com"
               prepend-inner-icon="mdi-account-circle-outline"
               variant="outlined"
@@ -56,7 +56,7 @@
           <div class="mb-2">
             <div class="text-caption font-weight-bold text-grey-darken-2 mb-1 ml-1">Contrasenya</div>
             <v-text-field
-              v-model="passwordInput"
+              v-model="password"
               :type="visible ? 'text' : 'password'"
               placeholder="••••••••"
               prepend-inner-icon="mdi-lock-outline"
@@ -143,23 +143,18 @@ const handleLogin = async () => {
     // LLAMAMOS A LA ACCIÓN DEL STORE
     const user = await authStore.login(emailInput.value, passwordInput.value);
     
-    // Si no da error, redirigimos
-    switch (user.rol) {
-      case 'admin':
-        router.push('/admin/solicituds');
-        break;
-      case 'centre':
-        router.push('/paginaPrincipal');
-        break;
-      case 'professor':
-        router.push('/professor/paginaPrincipal');
-        break;
-      default:
-        router.push('/');
-        break;
+    // Redirigir segons el rol de l'usuari
+    const role = authStore.user?.role;
+
+    if (role === 'admin') {
+      router.push('/solicituds'); // Pàgina principal d'Admin
+    } else if (role === 'professor') {
+      router.push('/paginaPrincipalProfessor'); // Pàgina principal de Professor
+    } else {
+      router.push('/'); // Per defecte (o rol 'institut')
     }
-  } catch (err) {
-    error.value = err.message;
+  } catch (error) {
+    errorMessage.value = error.message;
   } finally {
     loading.value = false;
   }
