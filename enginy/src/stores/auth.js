@@ -47,11 +47,14 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
-    logout() {
+    logout(router = null) {
       this.user = null;
       localStorage.removeItem('user');
-      // Opcional: forzar recarga o ir al login
-      window.location.href = '/login'; 
+      if (router) {
+        router.push('/login');
+      } else {
+        window.location.href = '/login';
+      }
     }
   }
 });

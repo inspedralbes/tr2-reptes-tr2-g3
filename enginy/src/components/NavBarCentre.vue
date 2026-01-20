@@ -25,7 +25,7 @@
           
           <div class="d-flex h-100 align-center flex-grow-1">
             <v-btn 
-              to="/paginaPrincipalProfessor" 
+              to="/" 
               variant="text" 
               class="text-none font-weight-bold text-blue-darken-4 rounded-0 h-100 menu-btn"
             >
@@ -33,18 +33,11 @@
             </v-btn>
 
             <v-btn 
-              to="/tallersProfessor" 
+              to="/tallerCentre" 
               variant="text" 
               class="text-none font-weight-bold text-blue-darken-4 rounded-0 h-100 menu-btn"
             >
-              Tallers
-            </v-btn>
-            <v-btn 
-              to="/veureSolicituds" 
-              variant="text" 
-              class="text-none font-weight-bold text-blue-darken-4 rounded-0 h-100 menu-btn"
-            >
-              Veure Sol·licituds
+              Catàleg de Tallers
             </v-btn>
           </div>
         </v-container>
@@ -62,27 +55,10 @@
 .gap-3 { gap: 12px; }
 .cursor-pointer { cursor: pointer; }
 .hover-blue:hover { color: #004B87 !important; text-decoration: underline; }
-input::placeholder { color: #999; font-style: italic; }
 img { object-fit: contain; }
 .v-container { margin-left: auto; margin-right: auto; }
 
-/* --- ESTILOS NUEVOS PARA EL MENÚ --- */
-
-/* 1. Transición suave */
-.menu-btn {
-  transition: all 0.2s ease-in-out;
-}
-
-/* 2. Efecto HOVER: Fondo Azul y Texto Blanco */
-.menu-btn:hover {
-  background-color: #004B87 !important;
-  color: white !important;
-}
-
-/* 3. Efecto ACTIVO (cuando estás en esa página): Se queda Azul */
-.v-btn--active.menu-btn {
-  background-color: #004B87 !important;
-  color: white !important;
-  opacity: 1; /* Evita transparencias de Vuetify */
-}
+.menu-btn { transition: all 0.2s ease-in-out; }
+.menu-btn:hover { background-color: #004B87 !important; color: white !important; }
+.v-btn--active.menu-btn { background-color: #004B87 !important; color: white !important; opacity: 1; }
 </style>

@@ -168,7 +168,10 @@ app.put('/api/solicituds/:id', async (req, res) => {
 app.get('/api/centres/:codi', async (req, res) => {
     try {
         const db = await connectDB();
-        const centre = await db.collection('centres_oficials').findOne({ _id: req.params.codi });
+        // Buscamos por _id (si es el código) O por un campo 'codi' si existe
+        const centre = await db.collection('centres_oficials').findOne({ 
+            $or: [ { _id: req.params.codi }, { codi: req.params.codi } ] 
+        });
         
         if (centre) {
             res.json(centre);

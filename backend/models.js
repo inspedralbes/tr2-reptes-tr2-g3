@@ -2,7 +2,7 @@ const { ObjectId } = require('mongodb');
 const { connectDB } = require('./db');
 const bcrypt = require('bcryptjs'); // <--- CORRECTO
 
-const ROLS = ['admin', 'centre', 'professor', 'institut']; // Añadido 'institut' por si acaso
+const ROLS = ['admin', 'centre', 'professor']; // Añadido 'institut' por si acaso
 const MODALITATS = ['A', 'B', 'C'];
 const ESTATS_SOL = ['pendent', 'assignat', 'finalitzat', 'rebutjada'];
 
@@ -59,7 +59,14 @@ async function createUsuari(data) {
     // 4. Caso especial: Profesor necesita centre_id
     if (rol === 'professor') {
         if (!data.centre_id) throw new Error("Un profesor debe tener centre_id");
-        usuariDoc.centre_id = new ObjectId(data.centre_id);
+        
+        // FIX: Si el ID del centro es un ObjectId válido (24 chars hex), lo convertimos.
+        // Si no (es un código tipo "08012345"), lo guardamos tal cual como string.
+        if (typeof data.centre_id === 'string' && data.centre_id.length === 24 && /^[0-9a-fA-F]{24}$/.test(data.centre_id)) {
+            usuariDoc.centre_id = new ObjectId(data.centre_id);
+        } else {
+            usuariDoc.centre_id = data.centre_id;
+        }
     }
 
     // 5. Insertar en BDD

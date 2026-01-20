@@ -144,17 +144,19 @@ const handleLogin = async () => {
     const user = await authStore.login(emailInput.value, passwordInput.value);
     
     // Redirigir segons el rol de l'usuari
-    const role = authStore.user?.role;
+    const rol = authStore.user?.rol;
 
-    if (role === 'admin') {
-      router.push('/solicituds'); // Pàgina principal d'Admin
-    } else if (role === 'professor') {
+    if (rol === 'admin') {
+      router.push('/tallers'); // Pàgina principal d'Admin
+    } else if (rol === 'professor') {
       router.push('/paginaPrincipalProfessor'); // Pàgina principal de Professor
+    } else if (rol === 'centre') {
+      router.push('/tallerCentre'); // Pàgina principal de Centre (Catàleg)
     } else {
       router.push('/'); // Per defecte (o rol 'institut')
     }
-  } catch (error) {
-    errorMessage.value = error.message;
+  } catch (e) {
+    error.value = e.message;
   } finally {
     loading.value = false;
   }

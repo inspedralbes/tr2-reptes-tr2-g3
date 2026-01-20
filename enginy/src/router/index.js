@@ -21,13 +21,20 @@ import paginaPrincipalProfessor from '@/pages/pagesProfessor/paginaPrincipalProf
 import TallersProfessor from '@/pages/pagesProfessor/TallersProfessor.vue'
 import NavBarProfessor from '@/components/NavBarProfessor.vue'
 import veureSolicituds from '@/pages/pagesProfessor/veureSolicituds.vue'
+import TallerCentre from '@/pages/Instituts/TallerCentre.vue'
 
 const routes = [
+  {
+    path: '/tallerCentre',
+    name: 'TallerCentre',
+    component: TallerCentre,
+    meta: { requiresAuth: true, role: 'centre' }
+  },
   {
     path: '/veureSolicituds',
     name: 'veureSolicituds',
     component: veureSolicituds,
-    meta: { requiresAuth: true, role: 'admin' }
+    meta: { requiresAuth: true, role: 'professor' }
   },
   {
     path: '/navBarProfessor',
@@ -103,7 +110,7 @@ router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore()
 
   // Obtenemos el rol del usuario (asumiendo que está en authStore.user.role)
-  const userRole = authStore.user?.role
+  const userRole = authStore.user?.rol
 
   // 1. Si la ruta requiere autenticación y NO estamos logueados -> Login
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
@@ -114,6 +121,7 @@ router.beforeEach(async (to, from, next) => {
   if (to.meta.guestOnly && authStore.isAuthenticated) {
     if (userRole === 'professor') return next('/paginaPrincipalProfessor')
     if (userRole === 'admin') return next('/solicituds') // O la home de admin
+    if (userRole === 'centre') return next('/tallerCentre')
     return next('/')
   }
 
@@ -122,6 +130,7 @@ router.beforeEach(async (to, from, next) => {
     if (to.meta.role !== userRole) {
       if (userRole === 'professor') return next('/paginaPrincipalProfessor')
       if (userRole === 'admin') return next('/solicituds')
+      if (userRole === 'centre') return next('/tallerCentre')
       return next('/')
     }
   }

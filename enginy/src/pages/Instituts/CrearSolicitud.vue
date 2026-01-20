@@ -194,6 +194,40 @@
                <v-chip value="Dijous" filter variant="outlined">Dijous</v-chip>
              </v-chip-group>
 
+             <label class="text-subtitle-2 font-weight-bold text-grey-darken-1">NIVELL D'INTERÈS / PRIORITAT</label>
+             <div class="text-caption text-grey mb-2">Indica la importància d'aquest taller per al vostre centre.</div>
+             
+             <v-chip-group v-model="form.relevancia" mandatory class="mb-4">
+               <v-chip 
+                 value="Alta" 
+                 filter 
+                 variant="outlined" 
+                 color="red-darken-1"
+                 :class="{'bg-red-lighten-5': form.relevancia === 'Alta'}"
+               >
+                 <v-icon start icon="mdi-fire"></v-icon> Alta
+               </v-chip>
+
+               <v-chip 
+                 value="Normal" 
+                 filter 
+                 variant="outlined" 
+                 color="blue"
+                 :class="{'bg-blue-lighten-5': form.relevancia === 'Normal'}"
+               >
+                 <v-icon start icon="mdi-check-circle-outline"></v-icon> Normal
+               </v-chip>
+
+               <v-chip 
+                 value="Baixa" 
+                 filter 
+                 variant="outlined" 
+                 color="grey-darken-1"
+                 :class="{'bg-grey-lighten-4': form.relevancia === 'Baixa'}"
+               >
+                 <v-icon start icon="mdi-chevron-down"></v-icon> Baixa
+               </v-chip>
+             </v-chip-group>
              <label class="text-subtitle-2 font-weight-bold text-grey-darken-1">OBSERVACIONS</label>
              <v-textarea 
                 v-model="form.observacions"
@@ -249,13 +283,14 @@ const formRef = ref(null);
 
 // ESTADO: Datos
 const taller = ref({});
-const nomCentreDetectat = ref(''); // Para guardar el nombre del Excel
+const nomCentreDetectat = ref(''); 
 
-// ESTADO: Formulario
+// ESTADO: Formulario (ACTUALIZADO CON RELEVANCIA)
 const form = reactive({
-  codi_centre: '', // <--- NUEVO CAMPO
+  codi_centre: '', 
   alumnes_previstos: null,
   dia_preferit: 'Dimarts',
+  relevancia: 'Normal', // <--- NUEVO CAMPO POR DEFECTO
   observacions: ''
 });
 
@@ -277,22 +312,19 @@ onMounted(() => {
   cargarTaller();
 });
 
-// --- 2. BUSCADOR DE CENTRO (Lógica Nueva) ---
+// --- 2. BUSCADOR DE CENTRO ---
 const buscarNomCentre = async (codi) => {
-  // Solo buscamos si tiene longitud suficiente para evitar llamadas innecesarias
   if (!codi || codi.length < 5) {
     nomCentreDetectat.value = '';
     return;
   }
-
   try {
-    // Esta ruta debe existir en tu server.js
     const response = await fetch(`http://localhost:3000/api/centres/${codi}`);
     if (response.ok) {
       const data = await response.json();
-      nomCentreDetectat.value = data.nom;
+      nomCentreDetectat.value = data.nom || data.denominacio_completa;
     } else {
-      nomCentreDetectat.value = ''; // No encontrado
+      nomCentreDetectat.value = ''; 
     }
   } catch (error) {
     console.error("Error buscant centre", error);
@@ -309,7 +341,8 @@ const reglasAlumnos = [
 const abrirModal = () => {
   form.alumnes_previstos = null;
   form.observacions = '';
-  // No reseteamos codi_centre por si el usuario hace varias pruebas
+  form.relevancia = 'Normal'; // <--- RESETEAR AL ABRIR
+  // No reseteamos codi_centre
   dialog.value = true;
 };
 
@@ -318,9 +351,8 @@ const enviarSolicitud = async () => {
   const { valid } = await formRef.value.validate();
   if (!valid) return;
 
-  // Validación extra: Código válido
   if (!nomCentreDetectat.value) {
-      alert("Codi de centre invàlid o no trobat. Revisa el número.");
+      alert("Codi de centre invàlid o no trobat.");
       return;
   }
 
@@ -332,9 +364,10 @@ const enviarSolicitud = async () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         taller_id: taller.value._id,
-        codi_centre: form.codi_centre, // Enviamos el código validado
+        codi_centre: form.codi_centre,
         alumnes_previstos: parseInt(form.alumnes_previstos),
         dia_preferit: form.dia_preferit,
+        relevancia: form.relevancia, // <--- ENVIAMOS EL DATO
         observacions: form.observacions
       })
     });
@@ -344,7 +377,7 @@ const enviarSolicitud = async () => {
     dialog.value = false;
     snackbar.value = true;
     
-    await cargarTaller(); // Refrescar plazas
+    await cargarTaller();
 
   } catch (error) {
     alert("Error creant la sol·licitud.");

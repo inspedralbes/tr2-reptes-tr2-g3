@@ -15,19 +15,20 @@
 
         <div class="d-none d-md-flex align-center text-caption text-grey-darken-2 gap-3">
           <div class="d-flex align-center mr-4">
-            <v-icon size="small" class="mr-1">mdi-earth</v-icon>
-            <span class="cursor-pointer hover-blue">Idioma</span>
           </div>
-          <v-btn 
-            prepend-icon="mdi-account" 
-            variant="outlined" 
-            size="small"
-            color="#333"
-            class="text-none ml-2"
-            @click="irALogin"
-          >
-            Accedeix
-          </v-btn>
+          <template v-if="!authStore.isAuthenticated">
+            <v-btn 
+              prepend-icon="mdi-account" 
+              variant="outlined" 
+              size="small"
+              color="#333"
+              class="text-none ml-2"
+              @click="irALogin"
+            >
+              Accedeix
+            </v-btn>
+          </template>
+          <LogoutButton v-else class="ml-2" />
         </div>
       </v-container>
 
@@ -81,7 +82,11 @@
 
 <script setup>
   import { useRouter } from 'vue-router';
+  import { useAuthStore } from '@/stores/auth';
+  import LogoutButton from '@/components/LogoutButton.vue';
+
   const router = useRouter();
+  const authStore = useAuthStore();
 
   const irAInicio = () => { router.push('/'); }
   const irALogin = () => { router.push('/login'); }

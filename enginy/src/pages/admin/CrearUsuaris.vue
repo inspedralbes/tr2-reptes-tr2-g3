@@ -304,11 +304,11 @@ const loadingCentre = ref(false);
 const codiCentreProfesorInput = ref('');
 const nomCentreProfesorDisplay = ref('');
 
-// ESTAT DEL FORMULARI (es manté igual per a la UI)
+// ESTAT DEL FORMULARI
 const form = reactive({
   email: '',
   password: '',
-  rol: 'centre', 
+  rol: 'centre', // Valor por defecto
   centreData: {
     codi_centre: '',
     nom_oficial: '',
@@ -333,7 +333,7 @@ const rules = {
 
 // --- LÓGICA DE BÚSQUEDA PARA ROL: CENTRE ---
 const buscarNomCentre = async (codi) => {
-  if (!codi || codi.length < 5) {
+  if (!codi || codi.length < 7) {
       form.centreData.nom_oficial = '';
       return;
   }
@@ -343,8 +343,9 @@ const buscarNomCentre = async (codi) => {
     const response = await fetch(`http://localhost:3000/api/centres/${codi}`);
     if (response.ok) {
       const data = await response.json();
-      form.centreData.nom_oficial = data.nom; 
+      form.centreData.nom_oficial = data.nom || data.denominacio_completa; 
     } else {
+      // Si no existe, permitimos escribirlo manualmente o lo dejamos vacío
       form.centreData.nom_oficial = ''; 
     }
   } catch (error) {
@@ -356,7 +357,7 @@ const buscarNomCentre = async (codi) => {
 
 // --- LÓGICA DE BÚSQUEDA PARA ROL: PROFESSOR ---
 const buscarCentrePerProfessor = async (codi) => {
-  if (!codi || codi.length < 5) {
+  if (!codi || codi.length < 7) {
       nomCentreProfesorDisplay.value = '';
       form.professorData.centre_id = null;
       return;
@@ -367,7 +368,8 @@ const buscarCentrePerProfessor = async (codi) => {
     const response = await fetch(`http://localhost:3000/api/centres/${codi}`);
     if (response.ok) {
       const data = await response.json();
-      nomCentreProfesorDisplay.value = data.nom;
+      nomCentreProfesorDisplay.value = data.nom || data.denominacio_completa;
+      // Guardamos el ID real de Mongo para vincularlo
       form.professorData.centre_id = data._id; 
     } else {
       nomCentreProfesorDisplay.value = 'Centre no trobat';
@@ -394,10 +396,10 @@ const guardarUsuari = async () => {
   loading.value = true;
   
   try {
-    // 1. Construim el document (Igual que antes)
+    // 1. Construim el document CORRECTO para el Backend
     const payload = {
         email: form.email,
-        password_hash: form.password, 
+        password: form.password, // <--- CAMBIO CRUCIAL: 'password', no 'password_hash'
         rol: form.rol,
         perfil: {}
     };
@@ -405,12 +407,11 @@ const guardarUsuari = async () => {
     if (form.rol === 'centre') {
         payload.perfil = {
             codi_centre: form.centreData.codi_centre,
-            nom_oficial: form.centreData.nom_oficial,
+            nom: form.centreData.nom_oficial, // Usamos 'nom' estándar
             adreça: form.centreData.adreça,
             municipi: form.centreData.municipi
         };
     } else if (form.rol === 'professor') {
-        // Asegúrate que centre_id es el ID de Mongo (string de 24 caracteres)
         payload.centre_id = form.professorData.centre_id; 
         payload.perfil = {
             nom: form.professorData.nom,
@@ -419,10 +420,9 @@ const guardarUsuari = async () => {
         };
     }
 
-    console.log("Enviando...", payload); // Para depurar
+    console.log("Enviando al backend:", payload); 
 
-    // --- AQUÍ ESTÁ EL CAMBIO IMPORTANTE ---
-    // Descomenta y ajusta la URL a la de tu backend real
+    // 2. Enviamos la petición
     const response = await fetch('http://localhost:3000/api/usuaris', {
       method: 'POST',
       headers: { 
@@ -431,21 +431,21 @@ const guardarUsuari = async () => {
       body: JSON.stringify(payload)
     });
 
+    const respuestaServidor = await response.json();
+
     if (!response.ok) {
-        // Si el backend devuelve error (ej: 400 o 500)
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Error al servidor");
+        throw new Error(respuestaServidor.error || "Error al servidor");
     }
 
-    const respuestaServidor = await response.json();
-    console.log("Usuario creado:", respuestaServidor);
-    // --------------------------------------
-
+    // 3. Éxito
     snackbar.value = true;
     
-    // Opcional: Redirigir después de crear
+    // Opcional: Limpiar formulario o redirigir
     setTimeout(() => {
-       // router.push('/admin/usuaris');
+       // router.push('/admin/usuaris'); // Descomenta si quieres redirigir
+       // O limpiar:
+       form.email = '';
+       form.password = '';
     }, 1500);
 
   } catch (error) {
@@ -456,6 +456,7 @@ const guardarUsuari = async () => {
   }
 };
 </script>
+
 <style scoped>
 .text-primary-dark { color: #004B87; }
 
