@@ -1,8 +1,8 @@
 const { ObjectId } = require('mongodb');
 const { connectDB } = require('./db');
-const bcrypt = require('bcryptjs'); // <--- CORRECTO
+const bcrypt = require('bcryptjs');
 
-const ROLS = ['admin', 'centre', 'professor']; // Añadido 'institut' por si acaso
+const ROLS = ['admin', 'centre', 'professor', 'institut'];
 const MODALITATS = ['A', 'B', 'C'];
 const ESTATS_SOL = ['pendent', 'assignat', 'finalitzat', 'rebutjada'];
 
@@ -12,56 +12,42 @@ function validarEnum(valor, permitidos, campo) {
     }
 }
 
-// --- VALIDAR LOGIN (CORREGIDO) ---
+// --- VALIDAR LOGIN ---
 async function validarLogin(email, passwordInput) {
     const db = await connectDB();
     const user = await db.collection('usuaris').findOne({ email: email });
 
     if (!user) return null; 
 
-    // Comparamos la contraseña que escribe el usuario con la encriptada en BD
-    // Nota: Guardaremos el campo en la BD como 'password' para simplificar
     const match = await bcrypt.compare(passwordInput, user.password);
-    
-    if (match) {
-        return user;
-    }
+    if (match) return user;
     return null; 
 }
 
-// --- CREAR USUARIO (CORREGIDO) ---
+// --- CREAR USUARIO ---
 async function createUsuari(data) {
     const db = await connectDB();
     
-    // 1. Validamos si el email ya existe
     const existe = await db.collection('usuaris').findOne({ email: data.email });
     if (existe) throw new Error("El email ya está registrado");
 
-    // 2. Validamos el Rol
-    // Si no viene rol, asignamos 'institut' o 'centre' por defecto
     const rol = data.rol || 'institut'; 
     validarEnum(rol, ROLS, 'rol');
 
-    // 3. Encriptar contraseña
-    // FIX: El frontend envía 'password', no 'password_hash'
     const rawPassword = data.password || "123456"; 
     const salt = await bcrypt.genSalt(10);
     const passwordEncrypted = await bcrypt.hash(rawPassword, salt);
 
     let usuariDoc = {
         email: data.email,
-        password: passwordEncrypted, // Guardamos como 'password'
+        password: passwordEncrypted,
         rol: rol,
         data_registre: new Date(),
         perfil: data.perfil || {} 
     };
 
-    // 4. Caso especial: Profesor necesita centre_id
     if (rol === 'professor') {
         if (!data.centre_id) throw new Error("Un profesor debe tener centre_id");
-        
-        // FIX: Si el ID del centro es un ObjectId válido (24 chars hex), lo convertimos.
-        // Si no (es un código tipo "08012345"), lo guardamos tal cual como string.
         if (typeof data.centre_id === 'string' && data.centre_id.length === 24 && /^[0-9a-fA-F]{24}$/.test(data.centre_id)) {
             usuariDoc.centre_id = new ObjectId(data.centre_id);
         } else {
@@ -69,7 +55,6 @@ async function createUsuari(data) {
         }
     }
 
-    // 5. Insertar en BDD
     const result = await db.collection('usuaris').insertOne(usuariDoc);
     return result.insertedId;
 }
@@ -95,7 +80,7 @@ async function createTaller(data) {
     return result.insertedId;
 }
 
-// --- CREAR SOLICITUD ---
+// --- CREAR SOLICITUD (CORREGIDO) ---
 async function createSollicitud(centreUserId, tallerId, data) {
     const db = await connectDB();
 
@@ -115,7 +100,9 @@ async function createSollicitud(centreUserId, tallerId, data) {
         alumnes_previstos: parseInt(data.alumnes_previstos),
         preferencies: {
             dia_preferit: data.dia_preferit,
-            observacions: data.observacions
+            observacions: data.observacions,
+            // 👇 ¡ESTA ES LA LÍNEA QUE FALTABA! 👇
+            relevancia: data.relevancia || 'Normal' 
         },
         professors_assignats_ids: [],
         checklist_seguiment: []
@@ -143,7 +130,7 @@ async function createValoracio(sollicitudId, tallerId, tipoUsuario, respostes) {
     return await db.collection('valoracions').insertOne(valoracioDoc);
 }
 
-// --- GET ALL SOLICITUDES ---
+// --- GET ALL SOLICITUDES (MEJORADO PARA NOMBRES) ---
 async function getAllSolicitudes() {
     const db = await connectDB();
     return await db.collection('sollicituds').aggregate([
@@ -184,9 +171,10 @@ async function getAllSolicitudes() {
                 centre_info: {
                     nom_oficial: { 
                         $ifNull: [
-                            '$dades_oficials.nom', 
-                            '$usuario_info.perfil.nom_oficial', 
-                            { $concat: ["Institut Desconegut (", { $ifNull: ["$codi_centre", "Sense Codi"] }, ")"] }
+                            '$dades_oficials.nom',               // 1. Base oficial
+                            '$usuario_info.perfil.nom_oficial',  // 2. Perfil tipo instituto
+                            '$usuario_info.perfil.nom',          // 3. Perfil tipo profesor/admin
+                            { $concat: ["Usuari (", { $ifNull: ["$usuario_info.email", "?"] }, ")"] }
                         ] 
                     },
                     codi: '$codi_centre',

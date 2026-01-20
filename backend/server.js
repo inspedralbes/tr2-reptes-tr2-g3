@@ -124,20 +124,21 @@ app.post('/api/solicituds', async (req, res) => {
         // RECUPERAR ID DEL USUARIO
         // 1. Si el frontend envía 'userId', lo usamos (Login real).
         // 2. Si no, usamos un ID de prueba (Fallback por si acaso).
-        const userId = req.body.userId || '65a1b2c3d4e5f67890123456'; 
+        const userId = req.body.userId || '65a1b2c3d4e5f67890123456';
 
-        const { taller_id, alumnes_previstos, dia_preferit, observacions, codi_centre } = req.body;
+            const { taller_id, alumnes_previstos, dia_preferit, observacions, codi_centre, relevancia } = req.body;
 
-        if (!taller_id || !alumnes_previstos) {
-            return res.status(400).json({ error: "Falten dades obligatòries" });
-        }
+            if (!taller_id || !alumnes_previstos) {
+                return res.status(400).json({ error: "Falten dades obligatòries" });
+            }
 
-        const id = await createSollicitud(userId, taller_id, {
-            alumnes_previstos,
-            dia_preferit,
-            observacions,
-            codi_centre
-        });
+            const id = await createSollicitud(userId, taller_id, {
+                alumnes_previstos,
+                dia_preferit,
+                observacions,
+                codi_centre,
+                relevancia // forward frontend selection so models can store it
+            });
 
         res.status(201).json({ message: 'Sol·licitud creada correctament', id });
 

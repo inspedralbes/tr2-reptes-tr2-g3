@@ -141,32 +141,38 @@
         <v-card-text class="pt-6 px-6">
           <v-form ref="formRef" @submit.prevent="enviarSolicitud">
              
-             <label class="text-subtitle-2 font-weight-bold text-grey-darken-1">CODI DEL CENTRE</label>
+             <label class="text-subtitle-2 font-weight-bold text-grey-darken-1">CENTRE EDUCATIU</label>
              <v-row dense class="mt-1 mb-4">
                <v-col cols="4">
                  <v-text-field 
                     v-model="form.codi_centre"
-                    variant="outlined" 
+                    :readonly="isCampBloquejat"
+                    :variant="isCampBloquejat ? 'solo-filled' : 'outlined'"
+                    :bg-color="isCampBloquejat ? 'grey-darken-4' : 'white'"
                     density="comfortable"
-                    placeholder="Ex: 08000013"
+                    placeholder="Ex: 080..."
                     :rules="[v => !!v || 'Codi obligatori']"
                     @update:model-value="buscarNomCentre"
                     maxlength="10"
                     hide-details="auto"
+                    prepend-inner-icon="mdi-barcode-scan"
+                    :class="{ 'input-resaltado': isCampBloquejat }"
+                    :theme="isCampBloquejat ? 'dark' : 'light'"
                  ></v-text-field>
                </v-col>
                <v-col cols="8">
                  <v-text-field 
                     :model-value="nomCentreDetectat"
-                    variant="outlined" 
-                    density="comfortable"
                     readonly
-                    bg-color="white"
+                    :variant="isCampBloquejat ? 'solo-filled' : 'outlined'"
+                    :bg-color="isCampBloquejat ? 'grey-darken-4' : 'white'"
+                    density="comfortable"
                     placeholder="El nom apareixerà automàticament..."
                     prepend-inner-icon="mdi-school"
+                    :append-inner-icon="isCampBloquejat ? 'mdi-lock' : ''"
                     hide-details
-                    class="font-weight-medium"
-                    :color="nomCentreDetectat ? 'success' : 'grey'"
+                    :class="{ 'input-resaltado': isCampBloquejat }"
+                    :theme="isCampBloquejat ? 'dark' : 'light'"
                  ></v-text-field>
                </v-col>
              </v-row>
@@ -194,40 +200,19 @@
                <v-chip value="Dijous" filter variant="outlined">Dijous</v-chip>
              </v-chip-group>
 
-             <label class="text-subtitle-2 font-weight-bold text-grey-darken-1">NIVELL D'INTERÈS / PRIORITAT</label>
-             <div class="text-caption text-grey mb-2">Indica la importància d'aquest taller per al vostre centre.</div>
-             
+             <label class="text-subtitle-2 font-weight-bold text-grey-darken-1">NIVELL D'INTERÈS</label>
              <v-chip-group v-model="form.relevancia" mandatory class="mb-4">
-               <v-chip 
-                 value="Alta" 
-                 filter 
-                 variant="outlined" 
-                 color="red-darken-1"
-                 :class="{'bg-red-lighten-5': form.relevancia === 'Alta'}"
-               >
+               <v-chip value="Alta" filter variant="outlined" color="red-darken-1" :class="{'bg-red-lighten-5': form.relevancia === 'Alta'}">
                  <v-icon start icon="mdi-fire"></v-icon> Alta
                </v-chip>
-
-               <v-chip 
-                 value="Normal" 
-                 filter 
-                 variant="outlined" 
-                 color="blue"
-                 :class="{'bg-blue-lighten-5': form.relevancia === 'Normal'}"
-               >
+               <v-chip value="Normal" filter variant="outlined" color="blue" :class="{'bg-blue-lighten-5': form.relevancia === 'Normal'}">
                  <v-icon start icon="mdi-check-circle-outline"></v-icon> Normal
                </v-chip>
-
-               <v-chip 
-                 value="Baixa" 
-                 filter 
-                 variant="outlined" 
-                 color="grey-darken-1"
-                 :class="{'bg-grey-lighten-4': form.relevancia === 'Baixa'}"
-               >
+               <v-chip value="Baixa" filter variant="outlined" color="grey-darken-1" :class="{'bg-grey-lighten-4': form.relevancia === 'Baixa'}">
                  <v-icon start icon="mdi-chevron-down"></v-icon> Baixa
                </v-chip>
              </v-chip-group>
+
              <label class="text-subtitle-2 font-weight-bold text-grey-darken-1">OBSERVACIONS</label>
              <v-textarea 
                 v-model="form.observacions"
@@ -271,10 +256,13 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, onMounted, computed } from 'vue';
 import { useRoute } from 'vue-router'; 
+import { useAuthStore } from '@/stores/auth'; // <--- IMPORTAMOS PINIA
 
 const route = useRoute();
+const authStore = useAuthStore(); // <--- INICIALIZAMOS STORE
+
 const loading = ref(true);
 const enviando = ref(false);
 const dialog = ref(false);
@@ -285,12 +273,12 @@ const formRef = ref(null);
 const taller = ref({});
 const nomCentreDetectat = ref(''); 
 
-// ESTADO: Formulario (ACTUALIZADO CON RELEVANCIA)
+// ESTADO: Formulario
 const form = reactive({
   codi_centre: '', 
   alumnes_previstos: null,
   dia_preferit: 'Dimarts',
-  relevancia: 'Normal', // <--- NUEVO CAMPO POR DEFECTO
+  relevancia: 'Normal',
   observacions: ''
 });
 
@@ -318,6 +306,13 @@ const buscarNomCentre = async (codi) => {
     nomCentreDetectat.value = '';
     return;
   }
+  
+  // Si coincide con el del usuario logueado, lo cogemos del store
+  if (authStore.user?.perfil?.codi_centre === codi) {
+      nomCentreDetectat.value = authStore.user.perfil.nom || authStore.user.perfil.nom_oficial;
+      return;
+  }
+
   try {
     const response = await fetch(`http://localhost:3000/api/centres/${codi}`);
     if (response.ok) {
@@ -331,22 +326,46 @@ const buscarNomCentre = async (codi) => {
   }
 };
 
-// --- 3. VALIDACIÓN ---
+// --- 3. AUTO-COMPLETAR AL ABRIR MODAL ---
+const abrirModal = () => {
+  form.alumnes_previstos = null;
+  form.observacions = '';
+  form.relevancia = 'Normal';
+
+  // DETECTAR SI EL USUARIO TIENE CENTRO ASIGNADO
+  const usuario = authStore.user;
+  
+  if (usuario && usuario.perfil && usuario.perfil.codi_centre) {
+      // Caso: INSTITUT
+      form.codi_centre = usuario.perfil.codi_centre;
+      // Disparamos la búsqueda para que se rellene el nombre visualmente
+      buscarNomCentre(form.codi_centre);
+  } else if (usuario && usuario.centre_id) {
+      // Caso: PROFESSOR 
+      // Si el backend te enviara el código del centro en el login, podrías ponerlo aquí.
+  } else {
+      // Caso: Admin o Usuario nuevo
+      form.codi_centre = '';
+      nomCentreDetectat.value = '';
+  }
+
+  dialog.value = true;
+};
+
+// Computed para saber si debemos bloquear el campo (Estilo Dark Mode)
+const isCampBloquejat = computed(() => {
+    // Si el usuario tiene un código de centro fijo, bloqueamos
+    return !!(authStore.user?.perfil?.codi_centre);
+});
+
+// --- 4. VALIDACIÓN ---
 const reglasAlumnos = [
   v => !!v || "Has d'indicar quants alumnes vindran.",
   v => v > 0 || "Mínim 1 alumne.",
   v => v <= taller.value.places_disponibles || `Només queden ${taller.value.places_disponibles} places!`
 ];
 
-const abrirModal = () => {
-  form.alumnes_previstos = null;
-  form.observacions = '';
-  form.relevancia = 'Normal'; // <--- RESETEAR AL ABRIR
-  // No reseteamos codi_centre
-  dialog.value = true;
-};
-
-// --- 4. ENVIAR SOLICITUD ---
+// --- 5. ENVIAR SOLICITUD ---
 const enviarSolicitud = async () => {
   const { valid } = await formRef.value.validate();
   if (!valid) return;
@@ -359,17 +378,20 @@ const enviarSolicitud = async () => {
   enviando.value = true;
 
   try {
-    const response = await fetch('http://localhost:3000/api/solicituds', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    const payload = {
         taller_id: taller.value._id,
         codi_centre: form.codi_centre,
         alumnes_previstos: parseInt(form.alumnes_previstos),
         dia_preferit: form.dia_preferit,
-        relevancia: form.relevancia, // <--- ENVIAMOS EL DATO
-        observacions: form.observacions
-      })
+        relevancia: form.relevancia,
+        observacions: form.observacions,
+        userId: authStore.user?._id // Enviamos ID de usuario
+    };
+
+    const response = await fetch('http://localhost:3000/api/solicituds', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
     });
 
     if (!response.ok) throw new Error('Error al servidor');
@@ -390,12 +412,7 @@ const enviarSolicitud = async () => {
 // --- HELPERS VISUALES ---
 const generarImagen = (t) => {
   if (t.imatge && t.imatge.startsWith('http')) return t.imatge;
-  
-  const nom = t.nom || '';
-  const keywords = {'Robòtica': 'robot', 'Cuina': 'chef', 'Vela': 'sea', 'Mecànica': 'bike'};
-  const key = Object.keys(keywords).find(k => nom.includes(k)) || 'school';
-  const word = keywords[key] || 'education';
-  return `https://source.unsplash.com/1600x900/?${word}`;
+  return `https://source.unsplash.com/1600x900/?education`;
 };
 
 const getColor = (m) => ({ A: 'indigo', B: 'teal', C: 'orange-darken-1' }[m] || 'grey');
@@ -417,5 +434,15 @@ const calcularPorcentaje = (t) => {
   position: sticky;
   top: 100px;
   z-index: 10;
+}
+
+/* ESTILO ESPECIAL PARA EL INPUT RESALTADO (FONDO NEGRO / LETRA BLANCA) */
+.input-resaltado :deep(input) {
+    color: white !important;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+}
+.input-resaltado :deep(.v-field--disabled) {
+    opacity: 1 !important; /* Fuerza la visibilidad completa */
 }
 </style>

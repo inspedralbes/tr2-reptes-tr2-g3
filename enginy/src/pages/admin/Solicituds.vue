@@ -84,22 +84,22 @@
 
           <template v-slot:item.usuario="{ item }">
             <div class="py-2">
-              <div class="font-weight-bold text-body-1 text-white">
-                {{ item.centre_info?.nom_oficial || (item.centre_info?.codi ? 'Centre ' + item.centre_info.codi : 'Nom no disponible') }}
+              <div class="font-weight-bold text-body-1 text-primary-dark">
+                {{ item.centre_info?.nom_oficial || 'Nom no disponible' }}
               </div>
               
               <div class="d-flex align-center mt-1">
                  <v-chip 
                     v-if="item.centre_info?.codi" 
                     size="x-small" 
-                    color="primary" 
+                    color="blue-grey-lighten-4" 
                     variant="flat" 
-                    class="mr-2 font-weight-bold"
+                    class="mr-2 font-weight-bold text-blue-grey-darken-3"
                  >
                     {{ item.centre_info.codi }}
                  </v-chip>
                  
-                 <div class="text-caption text-grey d-flex align-center">
+                 <div class="text-caption text-grey-darken-2 d-flex align-center font-weight-medium">
                     <v-icon size="x-small" class="mr-1">mdi-email-outline</v-icon> 
                     {{ item.centre_info?.email || '-' }}
                  </div>
@@ -113,12 +113,20 @@
             </v-chip>
           </template>
 
-          <template v-slot:item.alumnes_previstos="{ item }">
-            <div class="font-weight-bold text-h6">{{ item.alumnes_previstos }}</div>
+          <template v-slot:item.relevancia="{ item }">
+            <v-chip 
+              :color="getColorPrioridad(item.preferencies?.relevancia)" 
+              size="small" 
+              variant="flat"
+              class="font-weight-bold"
+            >
+              <v-icon start size="x-small" :icon="getIconPrioridad(item.preferencies?.relevancia)"></v-icon>
+              {{ item.preferencies?.relevancia || 'Normal' }}
+            </v-chip>
           </template>
 
-          <template v-slot:item.dia_preferit="{ item }">
-            <span class="text-capitalize">{{ item.preferencies?.dia_preferit || '-' }}</span>
+          <template v-slot:item.alumnes_previstos="{ item }">
+            <div class="font-weight-bold text-h6 text-grey-darken-2">{{ item.alumnes_previstos }}</div>
           </template>
 
           <template v-slot:item.estat="{ item }">
@@ -170,15 +178,24 @@
           <template v-slot:expanded-row="{ columns, item }">
             <tr>
               <td :colspan="columns.length" class="bg-grey-lighten-5 pa-4">
-                <div class="d-flex align-start">
-                  <v-icon color="primary" class="mr-3 mt-1">mdi-message-text-outline</v-icon>
-                  <div>
-                    <strong class="text-primary-dark">Observacions de l'institut:</strong>
-                    <p class="mb-0 mt-1 text-body-2">
-                      {{ item.preferencies?.observacions || "No hi ha observacions." }}
-                    </p>
-                  </div>
-                </div>
+                <v-row no-gutters>
+                   <v-col cols="12" md="6" class="d-flex align-start mb-2 mb-md-0">
+                      <v-icon color="primary" class="mr-3 mt-1">mdi-calendar-clock</v-icon>
+                      <div>
+                        <strong class="text-primary-dark">Dia Preferit:</strong>
+                        <span class="ml-2 text-body-2">{{ item.preferencies?.dia_preferit || "No especificat" }}</span>
+                      </div>
+                   </v-col>
+                   <v-col cols="12" md="6" class="d-flex align-start">
+                      <v-icon color="primary" class="mr-3 mt-1">mdi-message-text-outline</v-icon>
+                      <div>
+                        <strong class="text-primary-dark">Observacions de l'institut:</strong>
+                        <p class="mb-0 mt-1 text-body-2 text-grey-darken-3">
+                          {{ item.preferencies?.observacions || "No hi ha observacions." }}
+                        </p>
+                      </div>
+                   </v-col>
+                </v-row>
               </td>
             </tr>
           </template>
@@ -206,11 +223,11 @@ const solicitudes = ref([]);
 const snackbar = ref({ show: false, text: '', color: 'success', icon: 'mdi-check' });
 
 const headers = [
-  { title: 'Data', key: 'data_solicitud', width: '120px' },
-  { title: 'Institut / Contacte', key: 'usuario', width: '350px' },
-  { title: 'Taller Sol·licitat', key: 'taller' },
+  { title: 'Data', key: 'data_solicitud', width: '100px' },
+  { title: 'Institut / Contacte', key: 'usuario', width: '300px' },
+  { title: 'Taller', key: 'taller' },
+  { title: 'Prioritat', key: 'relevancia', align: 'center', width: '120px' },
   { title: 'Alumnes', key: 'alumnes_previstos', align: 'center' },
-  { title: 'Dia', key: 'dia_preferit', align: 'center' },
   { title: 'Estat', key: 'estat', align: 'center' },
   { title: 'Accions', key: 'acciones', align: 'end', sortable: false },
 ];
@@ -283,6 +300,18 @@ const getColorEstado = (estado) => {
   return mapa[estado] || 'grey';
 };
 
+const getColorPrioridad = (p) => {
+    if (p === 'Alta') return 'red-lighten-1';
+    if (p === 'Baixa') return 'grey-lighten-2';
+    return 'blue-lighten-4 text-blue-darken-3'; // Normal
+};
+
+const getIconPrioridad = (p) => {
+    if (p === 'Alta') return 'mdi-fire';
+    if (p === 'Baixa') return 'mdi-chevron-down';
+    return 'mdi-minus';
+};
+
 const mostrarNotificacion = (text, color, icon) => {
   snackbar.value = { show: true, text, color, icon };
 };
@@ -298,4 +327,5 @@ onMounted(() => {
 .gap-4 { gap: 16px; }
 .border-bottom { border-bottom: 1px solid #e0e0e0; }
 .border-orange { border: 1px solid #ffe0b2; }
+/* HE ELIMINADO LA CLASE .info-visible PARA QUITAR EL FONDO */
 </style>
