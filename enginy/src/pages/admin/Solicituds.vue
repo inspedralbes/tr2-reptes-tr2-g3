@@ -70,7 +70,6 @@
         <v-data-table
           :headers="headers"
           :items="solicitudesFiltradas"
-          :search="search"
           :loading="loading"
           hover
           class="text-body-2"
@@ -251,8 +250,26 @@ const headers = [
 ];
 
 const solicitudesFiltradas = computed(() => {
-  if (filtroEstado.value === 'TODAS') return solicitudes.value;
-  return solicitudes.value.filter(s => s.estat === filtroEstado.value);
+  let items = solicitudes.value;
+
+  if (filtroEstado.value !== 'TODAS') {
+    items = items.filter(s => s.estat === filtroEstado.value);
+  }
+
+  if (search.value && search.value.trim() !== '') {
+    const searchTerm = search.value.toLowerCase().trim();
+    items = items.filter(s => {
+      const searchIn = [
+        s.centre_info?.nom_oficial,
+        s.taller_id?.nom,
+        s.centre_info?.email,
+      ].join(' ').toLowerCase();
+
+      return searchIn.includes(searchTerm);
+    });
+  }
+
+  return items;
 });
 
 const countPendientes = computed(() => 

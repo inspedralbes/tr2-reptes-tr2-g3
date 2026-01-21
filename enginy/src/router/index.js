@@ -119,7 +119,7 @@ router.beforeEach(async (to, from, next) => {
   // 2. Si la ruta es solo para invitados (Login) y SI estamos logueados -> Redirigir según rol
   if (to.meta.guestOnly && authStore.isAuthenticated) {
     if (userRole === 'professor') return next('/tallersProfessor')
-    if (userRole === 'admin') return next('/solicituds') // O la home de admin
+    if (userRole === 'admin') return next('/tallers') // O la home de admin
     if (userRole === 'centre') return next('/tallerCentre')
     return next('/tallers')
   }
@@ -128,7 +128,7 @@ router.beforeEach(async (to, from, next) => {
   if (to.meta.role && authStore.isAuthenticated) {
     if (to.meta.role !== userRole) {
       if (userRole === 'professor') return next('/tallersProfessor')
-      if (userRole === 'admin') return next('/solicituds')
+      if (userRole === 'admin') return next('/tallers')
       if (userRole === 'centre') return next('/tallerCentre')
       return next('/tallers')
     }
