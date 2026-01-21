@@ -113,7 +113,7 @@
             </v-chip>
           </template>
 
-          <template v-slot:item.relevancia="{ item }">
+          <template v-slot:item.preferencies.relevancia="{ item }">
             <v-chip 
               :color="getColorPrioridad(item.preferencies?.relevancia)" 
               size="small" 
@@ -222,11 +222,29 @@ const filtroEstado = ref('TODAS');
 const solicitudes = ref([]);
 const snackbar = ref({ show: false, text: '', color: 'success', icon: 'mdi-check' });
 
+const getPrioridadValue = (prioridad) => {
+  const p = prioridad || 'Normal';
+  if (p === 'Alta') return 3;
+  if (p === 'Normal') return 2;
+  if (p === 'Baixa') return 1;
+  return 2;
+};
+
 const headers = [
-  { title: 'Data', key: 'data_solicitud', width: '100px' },
-  { title: 'Institut / Contacte', key: 'usuario', width: '300px' },
-  { title: 'Taller', key: 'taller' },
-  { title: 'Prioritat', key: 'relevancia', align: 'center', width: '120px' },
+  { title: 'Data', key: 'data_solicitud', width: '100px', sortable: false },
+  { title: 'Institut / Contacte', key: 'usuario', width: '300px', sortable: false },
+  { title: 'Taller', key: 'taller', sortable: false },
+  {
+    title: 'Prioritat',
+    key: 'preferencies.relevancia',
+    align: 'center',
+    width: '120px',
+    sort: (a, b) => {
+      const valA = getPrioridadValue(a);
+      const valB = getPrioridadValue(b);
+      return valA - valB;
+    },
+  },
   { title: 'Alumnes', key: 'alumnes_previstos', align: 'center' },
   { title: 'Estat', key: 'estat', align: 'center' },
   { title: 'Accions', key: 'acciones', align: 'end', sortable: false },
