@@ -10,14 +10,12 @@ import { createRouter, createWebHistory } from 'vue-router'
 // Importamos el Store de Pinia
 import { useAuthStore } from '@/stores/auth'
 
-import paginaPrincipal from '@/pages/paginaPrincipal.vue'
 import Tallers from '@/pages/Tallers.vue'
 import Login from '@/pages/Login.vue'
 import CrearTaller from '@/pages/admin/CrearTaller.vue'
 import CrearSolicitud from '@/pages/Instituts/CrearSolicitud.vue'
 import Solicituds  from '@/pages/admin/Solicituds.vue' 
 import CrearUsuaris from '@/pages/admin/CrearUsuaris.vue'
-import paginaPrincipalProfessor from '@/pages/pagesProfessor/paginaPrincipalProfessor.vue'
 import TallersProfessor from '@/pages/pagesProfessor/TallersProfessor.vue'
 import NavBarProfessor from '@/components/NavBarProfessor.vue'
 import veureSolicituds from '@/pages/pagesProfessor/veureSolicituds.vue'
@@ -46,12 +44,6 @@ const routes = [
     path: '/tallersProfessor',
     name: 'TallersProfessor',
     component: TallersProfessor,
-    meta: { requiresAuth: true, role: 'professor' }
-  },
-  {
-    path: '/paginaPrincipalProfessor',
-    name: 'paginaPrincipalProfessor',
-    component: paginaPrincipalProfessor,
     meta: { requiresAuth: true, role: 'professor' }
   },
   {
@@ -119,7 +111,7 @@ router.beforeEach(async (to, from, next) => {
 
   // 2. Si la ruta es solo para invitados (Login) y SI estamos logueados -> Redirigir según rol
   if (to.meta.guestOnly && authStore.isAuthenticated) {
-    if (userRole === 'professor') return next('/paginaPrincipalProfessor')
+    if (userRole === 'professor') return next('/tallersProfessor')
     if (userRole === 'admin') return next('/solicituds') // O la home de admin
     if (userRole === 'centre') return next('/tallerCentre')
     return next('/tallers')
@@ -128,7 +120,7 @@ router.beforeEach(async (to, from, next) => {
   // 3. Control de Acceso por Rol (RBAC)
   if (to.meta.role && authStore.isAuthenticated) {
     if (to.meta.role !== userRole) {
-      if (userRole === 'professor') return next('/paginaPrincipalProfessor')
+      if (userRole === 'professor') return next('/tallersProfessor')
       if (userRole === 'admin') return next('/solicituds')
       if (userRole === 'centre') return next('/tallerCentre')
       return next('/tallers')

@@ -149,7 +149,7 @@ const handleLogin = async () => {
     if (rol === 'admin') {
       router.push('/tallers'); // Pàgina principal d'Admin
     } else if (rol === 'professor') {
-      router.push('/paginaPrincipalProfessor'); // Pàgina principal de Professor
+      router.push('/tallersProfessor'); // Pàgina principal de Professor
     } else if (rol === 'centre') {
       router.push('/tallerCentre'); // Pàgina principal de Centre (Catàleg)
     } else {

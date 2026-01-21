@@ -36,13 +36,6 @@
         <v-container class="pa-0 d-flex align-center" style="height: 40px; max-width: 1000px;">
           
           <div class="d-flex h-100 align-center flex-grow-1">
-            <div 
-              class="d-flex align-center px-4 h-100 font-weight-bold cursor-pointer" 
-              style="background-color: #004B87; color: white;"
-              @click="irAInicio"
-            >
-              Inici
-            </div>
 
             <v-btn 
               to="/tallers" 
@@ -88,7 +81,6 @@
   const router = useRouter();
   const authStore = useAuthStore();
 
-  const irAInicio = () => { router.push('/'); }
   const irALogin = () => { router.push('/login'); }
 </script>
 

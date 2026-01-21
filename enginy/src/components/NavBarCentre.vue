@@ -24,13 +24,6 @@
         <v-container class="pa-0 d-flex align-center" style="height: 40px; max-width: 1000px;">
           
           <div class="d-flex h-100 align-center flex-grow-1">
-            <v-btn 
-              to="/" 
-              variant="text" 
-              class="text-none font-weight-bold text-blue-darken-4 rounded-0 h-100 menu-btn"
-            >
-              Inici
-            </v-btn>
 
             <v-btn 
               to="/tallerCentre" 
