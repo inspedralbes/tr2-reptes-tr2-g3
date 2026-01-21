@@ -19,7 +19,7 @@
             <v-avatar color="#004B87" size="12" class="mr-3"></v-avatar>
             <h1 class="text-h4 font-weight-black" style="color: #004B87; letter-spacing: -1px;">ENGINY</h1>
           </div>
-          <h2 class="text-h5 font-weight-bold mb-2 text-grey-darken-4">Benvingut de nou</h2>
+          <h2 class="text-h5 font-weight-bold mb-2 text-grey-darken-4">Benvingut</h2>
           <p class="text-body-2 text-grey-darken-1">
             Si us plau, introdueix les teves dades.
           </p>
@@ -153,7 +153,7 @@ const handleLogin = async () => {
     } else if (rol === 'centre') {
       router.push('/tallerCentre'); // Pàgina principal de Centre (Catàleg)
     } else {
-      router.push('/'); // Per defecte (o rol 'institut')
+      router.push('/tallers'); // Per defecte (o rol 'institut')
     }
   } catch (e) {
     error.value = e.message;

@@ -56,9 +56,9 @@ const routes = [
   },
   {
     path: '/',
-    name: 'paginaPrincipal',
-    component: paginaPrincipal,
-    meta: { requiresAuth: false } // Pública
+    name: 'LoginHome',
+    component: Login,
+    meta: { requiresAuth: false, guestOnly: true }
   },
   {
     path: '/tallers',
@@ -122,7 +122,7 @@ router.beforeEach(async (to, from, next) => {
     if (userRole === 'professor') return next('/paginaPrincipalProfessor')
     if (userRole === 'admin') return next('/solicituds') // O la home de admin
     if (userRole === 'centre') return next('/tallerCentre')
-    return next('/')
+    return next('/tallers')
   }
 
   // 3. Control de Acceso por Rol (RBAC)
@@ -131,7 +131,7 @@ router.beforeEach(async (to, from, next) => {
       if (userRole === 'professor') return next('/paginaPrincipalProfessor')
       if (userRole === 'admin') return next('/solicituds')
       if (userRole === 'centre') return next('/tallerCentre')
-      return next('/')
+      return next('/tallers')
     }
   }
 
