@@ -9,116 +9,110 @@
       <div class="hero-container">
         <v-img
           :src="generarImagen(taller)"
-          height="400"
+          height="350"
           cover
           class="align-end"
           gradient="to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.8) 100%"
         >
-          <v-container style="max-width: 1100px;" class="pb-10">
+          <v-container style="max-width: 1100px;" class="pb-8">
             <v-row align="end">
               <v-col>
-                <v-chip :color="getColor(taller.modalitat)" class="mb-4 font-weight-bold text-white shadow-chip" size="large">
+                <v-chip :color="getColor(taller.modalitat)" class="mb-3 font-weight-bold text-white shadow-chip">
                   Modalitat {{ taller.modalitat }}
                 </v-chip>
-                <h1 class="text-h3 font-weight-black text-white mb-2 shadow-text">{{ taller.nom }}</h1>
-                <div class="d-flex align-center text-white text-h6 shadow-text">
-                   <v-icon class="mr-2" color="white">mdi-map-marker</v-icon> 
-                   {{ taller.lloc || 'Institut Milà i Fontanals' }}
+                <h1 class="text-h3 font-weight-black text-white mb-1 shadow-text">{{ taller.nom }}</h1>
+                
+                <div v-if="taller.info_centre" class="text-white mt-2 shadow-text">
+                   <div class="d-flex align-center text-h6 font-weight-bold">
+                       <v-icon class="mr-2">mdi-domain</v-icon> {{ taller.info_centre.nom }}
+                   </div>
+                   <div class="d-flex align-center text-subtitle-2 ml-1 opacity-90 mt-1">
+                       <v-icon size="small" class="mr-2">mdi-map-marker</v-icon> 
+                       {{ taller.info_centre.adreca }}, {{ taller.info_centre.municipi }}
+                   </div>
+                </div>
+                <div v-else class="text-white mt-2 shadow-text">
+                   <div class="d-flex align-center text-h6 font-weight-bold text-orange-lighten-2">
+                       <v-icon class="mr-2">mdi-archive-outline</v-icon> Catàleg de Tallers
+                   </div>
+                   <div class="text-subtitle-2 ml-8 opacity-90">
+                       Aquest taller encara no té ubicació. Demana'l pel teu centre!
+                   </div>
                 </div>
               </v-col>
-
               <v-col cols="auto">
-                <v-btn 
-                  variant="tonal" 
-                  color="white" 
-                  prepend-icon="mdi-arrow-left"
-                  height="50"
-                  class="bg-grey-darken-4"
-                  @click="$router.back()"
-                >
-                  Tornar
-                </v-btn>
+                <v-btn variant="tonal" color="white" prepend-icon="mdi-arrow-left" @click="$router.back()">Tornar</v-btn>
               </v-col>
             </v-row>
           </v-container>
         </v-img>
       </div>
 
-      <v-container class="mt-n10 position-relative" style="max-width: 1100px; z-index: 2;">
+      <v-container class="mt-n8 position-relative" style="max-width: 1100px; z-index: 2;">
         <v-row>
-          <v-col cols="12" md="8">
+          <v-col cols="12" md="7">
             <v-card class="rounded-xl pa-8 mb-6" elevation="3">
-              <div class="mb-6">
-                <h2 class="text-h5 font-weight-bold mb-4 text-primary-dark">Descripció de l'activitat</h2>
-                <p class="text-body-1 text-grey-darken-3" style="line-height: 1.8;">
-                  {{ taller.descripcio }}
-                </p>
-              </div>
-
+              <h2 class="text-h5 font-weight-bold mb-4 text-primary-dark">Descripció</h2>
+              <p class="text-body-1 text-grey-darken-3 mb-6">{{ taller.descripcio }}</p>
               <v-divider class="mb-6"></v-divider>
-
-              <div>
-                <h3 class="text-h6 font-weight-bold mb-4">Requisits Tècnics</h3>
-                <div class="d-flex flex-wrap gap-3">
-                  <v-chip v-if="taller.detalls_tecnics?.transport" variant="outlined" color="indigo" prepend-icon="mdi-bus">
-                    Transport Requerit
-                  </v-chip>
-                  <v-chip v-if="taller.detalls_tecnics?.ordinador" variant="outlined" color="teal" prepend-icon="mdi-laptop">
-                    Ordinador Requerit
-                  </v-chip>
-                  <v-chip v-if="taller.detalls_tecnics?.bata" variant="outlined" color="deep-orange" prepend-icon="mdi-coat-rack">
-                    Roba especial / Bata
-                  </v-chip>
-                  <v-chip variant="outlined" color="grey-darken-2" prepend-icon="mdi-clock-outline">
-                    Durada: 3h
-                  </v-chip>
-                </div>
+              <h3 class="text-h6 font-weight-bold mb-4">Requisits del Taller</h3>
+              <div class="d-flex flex-wrap gap-3">
+                 <v-chip v-if="taller.detalls_tecnics?.transport" variant="outlined" color="indigo" prepend-icon="mdi-bus">Transport</v-chip>
+                 <v-chip v-if="taller.detalls_tecnics?.ordinador" variant="outlined" color="teal" prepend-icon="mdi-laptop">Ordinador</v-chip>
+                 <v-chip variant="outlined" color="grey-darken-2" prepend-icon="mdi-clock-outline">3 hores</v-chip>
               </div>
             </v-card>
           </v-col>
 
-          <v-col cols="12" md="4">
+          <v-col cols="12" md="5">
             <div class="sticky-sidebar">
               <v-card elevation="6" class="rounded-xl overflow-hidden">
-                <v-card-title class="bg-grey-lighten-4 py-5 px-6">
-                  <div class="text-overline text-grey-darken-1 mb-1">DISPONIBILITAT</div>
-                  <div class="d-flex align-center justify-space-between">
-                    <span class="text-h4 font-weight-bold" :class="getColorText(taller.places_disponibles)">
-                      {{ taller.places_disponibles }}
-                    </span>
-                    <span class="text-body-1 text-grey font-weight-medium">places lliures</span>
-                  </div>
-                </v-card-title>
-                
-                <v-progress-linear
-                   :model-value="calcularPorcentaje(taller)"
-                   :color="getColorBarra(taller.places_disponibles)"
-                   height="8"
-                ></v-progress-linear>
+                <v-tabs v-model="tabActiva" bg-color="grey-lighten-4" color="primary" grow>
+                  <v-tab value="assistencia" :disabled="!taller.info_centre">
+                    <v-icon start>mdi-account-group</v-icon> Inscripció
+                  </v-tab>
+                  <v-tab value="acollida">
+                    <v-icon start>mdi-home-plus</v-icon> Ser Sede
+                  </v-tab>
+                </v-tabs>
 
-                <v-card-text class="pa-6">
-                  <div class="d-flex align-center mb-4 text-body-1">
-                     <v-icon color="primary" class="mr-3">mdi-calendar-check</v-icon> 
-                     <span>Dies: Dimarts i Dijous</span>
-                  </div>
+                <v-window v-model="tabActiva">
+                  <v-window-item value="assistencia">
+                    <div class="bg-white pa-6">
+                      <div v-if="taller.info_centre">
+                        <div class="d-flex align-center justify-space-between mb-4">
+                            <span class="text-h4 font-weight-bold" :class="getColorText(taller.places_disponibles)">
+                              {{ taller.places_disponibles }}
+                            </span>
+                            <span class="text-body-2 text-grey">places disponibles a <br><strong>{{ taller.info_centre.nom }}</strong></span>
+                        </div>
+                        <v-progress-linear :model-value="calcularPorcentaje(taller)" :color="getColorBarra(taller.places_disponibles)" height="8" rounded></v-progress-linear>
+                        
+                        <v-btn block size="x-large" color="primary" class="mt-6 font-weight-bold" @click="abrirModal('assistencia')" :disabled="taller.places_disponibles === 0">
+                           {{ taller.places_disponibles > 0 ? 'Reservar Places' : 'Complet' }}
+                        </v-btn>
+                      </div>
+                      <div v-else class="text-center py-8 text-grey">
+                        <v-icon size="40" class="mb-2">mdi-map-marker-off</v-icon>
+                        <p>Aquest taller encara no té una ubicació programada.</p>
+                      </div>
+                    </div>
+                  </v-window-item>
 
-                  <v-btn 
-                    block 
-                    size="x-large" 
-                    color="primary" 
-                    class="font-weight-bold rounded-lg mb-4 text-capitalize"
-                    elevation="4"
-                    @click="abrirModal"
-                    :disabled="taller.places_disponibles === 0"
-                  >
-                    {{ taller.places_disponibles > 0 ? 'Sol·licitar Inscripció' : 'Taller Complet' }}
-                  </v-btn>
-                  
-                  <div class="bg-blue-lighten-5 pa-3 rounded text-caption text-blue-darken-3 text-center">
-                     <v-icon size="small" class="mr-1">mdi-information</v-icon>
-                     La reserva quedarà pendent de validació pel centre.
-                  </div>
-                </v-card-text>
+                  <v-window-item value="acollida">
+                    <div class="bg-blue-grey-lighten-5 pa-6">
+                      <div class="text-subtitle-1 font-weight-bold mb-2 text-blue-grey-darken-3">
+                        Vols fer aquest taller al teu centre?
+                      </div>
+                      <p class="text-body-2 text-blue-grey-darken-1 mb-4">
+                        Sol·licita que els formadors vinguin a les teves instal·lacions.
+                      </p>
+                      <v-btn block size="x-large" color="blue-grey-darken-3" class="text-white font-weight-bold" @click="abrirModal('acollida')">
+                        <v-icon start>mdi-hand-wave</v-icon> Sol·licitar Ser Sede
+                      </v-btn>
+                    </div>
+                  </v-window-item>
+                </v-window>
               </v-card>
             </div>
           </v-col>
@@ -126,12 +120,12 @@
       </v-container>
     </div>
 
-    <v-dialog v-model="dialog" max-width="600" persistent transition="dialog-bottom-transition">
+    <v-dialog v-model="dialog" max-width="600" persistent>
       <v-card class="rounded-xl">
-        <v-card-item class="bg-primary text-white py-5 px-6">
+        <v-card-item :class="modoFormulario === 'assistencia' ? 'bg-primary' : 'bg-blue-grey-darken-3'" class="text-white py-4 px-6">
           <v-card-title class="text-h6 font-weight-bold">
-            <v-icon class="mr-2">mdi-file-document-edit</v-icon>
-            Nova Sol·licitud
+            <v-icon class="mr-2">{{ modoFormulario === 'assistencia' ? 'mdi-ticket-account' : 'mdi-domain-plus' }}</v-icon>
+            {{ modoFormulario === 'assistencia' ? 'Inscripció d\'Alumnes' : 'Sol·licitud per Acollir Taller' }}
           </v-card-title>
           <template v-slot:append>
              <v-btn icon="mdi-close" variant="text" color="white" @click="dialog = false"></v-btn>
@@ -141,210 +135,189 @@
         <v-card-text class="pt-6 px-6">
           <v-form ref="formRef" @submit.prevent="enviarSolicitud">
              
-             <label class="text-subtitle-2 font-weight-bold text-grey-darken-1">CENTRE EDUCATIU</label>
+             <label class="text-subtitle-2 font-weight-bold text-grey-darken-1">EL TEU CENTRE (CODI)</label>
              <v-row dense class="mt-1 mb-4">
                <v-col cols="4">
                  <v-text-field 
                     v-model="form.codi_centre"
                     :readonly="isCampBloquejat"
-                    :variant="isCampBloquejat ? 'solo-filled' : 'outlined'"
-                    :bg-color="isCampBloquejat ? 'grey-darken-4' : 'white'"
+                    :bg-color="isCampBloquejat ? 'grey-lighten-3' : 'white'"
                     density="comfortable"
+                    variant="outlined"
                     placeholder="Ex: 080..."
-                    :rules="[v => !!v || 'Codi obligatori']"
-                    @update:model-value="buscarNomCentre"
                     maxlength="10"
                     hide-details="auto"
-                    prepend-inner-icon="mdi-barcode-scan"
-                    :class="{ 'input-resaltado': isCampBloquejat }"
-                    :theme="isCampBloquejat ? 'dark' : 'light'"
+                    :rules="[v => !!v || 'Codi obligatori']"
+                    @update:model-value="buscarNomCentre" 
                  ></v-text-field>
                </v-col>
                <v-col cols="8">
                  <v-text-field 
                     :model-value="nomCentreDetectat"
                     readonly
-                    :variant="isCampBloquejat ? 'solo-filled' : 'outlined'"
-                    :bg-color="isCampBloquejat ? 'grey-darken-4' : 'white'"
+                    variant="filled"
+                    bg-color="grey-lighten-4"
                     density="comfortable"
+                    hide-details
                     placeholder="El nom apareixerà automàticament..."
                     prepend-inner-icon="mdi-school"
-                    :append-inner-icon="isCampBloquejat ? 'mdi-lock' : ''"
-                    hide-details
-                    :class="{ 'input-resaltado': isCampBloquejat }"
-                    :theme="isCampBloquejat ? 'dark' : 'light'"
                  ></v-text-field>
                </v-col>
              </v-row>
 
-             <label class="text-subtitle-2 font-weight-bold text-grey-darken-1">NOMBRE D'ALUMNES</label>
-             <v-text-field 
-                v-model.number="form.alumnes_previstos"
-                type="number" 
-                variant="outlined" 
-                density="comfortable"
-                class="mt-1 mb-2"
-                prepend-inner-icon="mdi-account-group"
-                :rules="reglasAlumnos"
-                placeholder="Ex: 15"
-             >
-               <template v-slot:append-inner>
-                 <span class="text-caption text-grey">màx {{ taller.places_disponibles }}</span>
-               </template>
-             </v-text-field>
-             
-             <label class="text-subtitle-2 font-weight-bold text-grey-darken-1 mt-2">DIA PREFERIT</label>
-             <v-chip-group v-model="form.dia_preferit" selected-class="text-primary" mandatory class="mb-4">
+             <div v-if="modoFormulario === 'assistencia'">
+                 <label class="text-subtitle-2 font-weight-bold text-grey-darken-1">ALUMNES A INSCRIURE</label>
+                 <v-text-field 
+                    v-model.number="form.alumnes_previstos"
+                    type="number" 
+                    variant="outlined" 
+                    density="comfortable"
+                    class="mt-1 mb-4"
+                    :rules="reglasAlumnos"
+                    suffix="alumnes"
+                    prepend-inner-icon="mdi-account-group"
+                 >
+                    <template v-slot:append-inner>
+                       <span class="text-caption text-grey">màx {{ taller.places_disponibles }}</span>
+                    </template>
+                 </v-text-field>
+             </div>
+
+             <div v-else class="mb-4 pa-4 bg-grey-lighten-4 rounded border">
+                 <div class="d-flex align-center mb-2">
+                    <v-icon color="orange-darken-2" class="mr-2">mdi-alert-circle-outline</v-icon>
+                    <span class="text-caption font-weight-bold text-grey-darken-3">REQUISITS D'AULA</span>
+                 </div>
+                 <p class="text-caption mb-3">
+                   Per acollir el taller "<strong>{{ taller.nom }}</strong>", has de garantir espai suficient.
+                 </p>
+                 <label class="text-subtitle-2 font-weight-bold text-grey-darken-1">CAPACITAT MÀXIMA DE LA TEVA AULA</label>
+                 <v-text-field 
+                    v-model.number="form.capacitat_proposada"
+                    type="number" 
+                    variant="outlined" 
+                    bg-color="white"
+                    density="comfortable"
+                    class="mt-1"
+                    placeholder="Ex: 25 places"
+                    prepend-inner-icon="mdi-chair-school"
+                    :rules="[v => v > 5 || 'Mínim 5 places per fer viable el taller']"
+                 ></v-text-field>
+             </div>
+
+             <label class="text-subtitle-2 font-weight-bold text-grey-darken-1">DIA PREFERIT</label>
+             <v-chip-group v-model="form.dia_preferit" mandatory class="mb-4">
                <v-chip value="Dimarts" filter variant="outlined">Dimarts</v-chip>
                <v-chip value="Dimecres" filter variant="outlined">Dimecres</v-chip>
                <v-chip value="Dijous" filter variant="outlined">Dijous</v-chip>
              </v-chip-group>
 
-             <label class="text-subtitle-2 font-weight-bold text-grey-darken-1">NIVELL D'INTERÈS</label>
-             <v-chip-group v-model="form.relevancia" mandatory class="mb-4">
-               <v-chip value="Alta" filter variant="outlined" color="red-darken-1" :class="{'bg-red-lighten-5': form.relevancia === 'Alta'}">
-                 <v-icon start icon="mdi-fire"></v-icon> Alta
-               </v-chip>
-               <v-chip value="Normal" filter variant="outlined" color="blue" :class="{'bg-blue-lighten-5': form.relevancia === 'Normal'}">
-                 <v-icon start icon="mdi-check-circle-outline"></v-icon> Normal
-               </v-chip>
-               <v-chip value="Baixa" filter variant="outlined" color="grey-darken-1" :class="{'bg-grey-lighten-4': form.relevancia === 'Baixa'}">
-                 <v-icon start icon="mdi-chevron-down"></v-icon> Baixa
-               </v-chip>
-             </v-chip-group>
-
              <label class="text-subtitle-2 font-weight-bold text-grey-darken-1">OBSERVACIONS</label>
              <v-textarea 
-                v-model="form.observacions"
+                v-model="form.observacions" 
                 variant="outlined" 
                 rows="3"
-                class="mt-1"
-                placeholder="Necessitats especials, grup bombolla, etc."
-                counter="200"
+                placeholder="Necessitats especials, horaris específics..."
              ></v-textarea>
 
-             <v-alert type="info" variant="tonal" density="compact" class="mb-4 text-caption">
-               En confirmar, es reservaran <strong>{{ form.alumnes_previstos || 0 }} places</strong> provisionalment.
-             </v-alert>
-
-             <div class="d-flex gap-3">
-               <v-btn variant="text" size="large" @click="dialog = false" class="flex-grow-1">Cancel·lar</v-btn>
-               <v-btn 
-                 color="primary" 
-                 size="large" 
-                 type="submit" 
-                 class="flex-grow-1 font-weight-bold"
-                 :loading="enviando"
-                 elevation="2"
-               >
-                 Confirmar Sol·licitud
-               </v-btn>
+             <div class="d-flex gap-2 mt-2">
+                <v-btn variant="text" @click="dialog = false" class="flex-grow-1">Cancel·lar</v-btn>
+                <v-btn 
+                    size="large" 
+                    :color="modoFormulario === 'assistencia' ? 'primary' : 'blue-grey-darken-3'" 
+                    type="submit" 
+                    :loading="enviando" 
+                    class="flex-grow-1 font-weight-bold"
+                >
+                Confirmar
+                </v-btn>
              </div>
           </v-form>
         </v-card-text>
       </v-card>
     </v-dialog>
 
-    <v-snackbar v-model="snackbar" color="success" timeout="4000" location="top">
-      <div class="d-flex align-center">
-        <v-icon class="mr-2">mdi-check-circle</v-icon>
-        <span>Sol·licitud creada correctament!</span>
-      </div>
-    </v-snackbar>
-
+    <v-snackbar v-model="snackbar" color="success">Sol·licitud enviada correctament!</v-snackbar>
   </v-main>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted, computed } from 'vue';
 import { useRoute } from 'vue-router'; 
-import { useAuthStore } from '@/stores/auth'; // <--- IMPORTAMOS PINIA
+import { useAuthStore } from '@/stores/auth'; // Asegúrate de tener Pinia configurado
 
 const route = useRoute();
-const authStore = useAuthStore(); // <--- INICIALIZAMOS STORE
+const authStore = useAuthStore();
 
+// Estados de carga y UI
 const loading = ref(true);
 const enviando = ref(false);
 const dialog = ref(false);
 const snackbar = ref(false);
 const formRef = ref(null);
 
-// ESTADO: Datos
+// Lógica de Tabs
+const tabActiva = ref('assistencia');
+const modoFormulario = ref('assistencia');
+
+// Datos del taller y del centro
 const taller = ref({});
 const nomCentreDetectat = ref(''); 
 
-// ESTADO: Formulario
+// Formulario reactivo
 const form = reactive({
   codi_centre: '', 
   alumnes_previstos: null,
+  capacitat_proposada: null,
   dia_preferit: 'Dimarts',
   relevancia: 'Normal',
   observacions: ''
 });
 
-// --- 1. CARGAR TALLER ---
+// --- 1. CARGAR DATOS DEL TALLER ---
 const cargarTaller = async () => {
   try {
     const id = route.params.id;
     const response = await fetch(`http://localhost:3000/api/tallers/${id}`);
-    if (!response.ok) throw new Error('Taller no trobat');
-    taller.value = await response.json();
-  } catch (error) {
-    console.error(error);
-  } finally {
-    loading.value = false;
-  }
-};
-
-onMounted(() => {
-  cargarTaller();
-});
-
-// --- 2. BUSCADOR DE CENTRO ---
-const buscarNomCentre = async (codi) => {
-  if (!codi || codi.length < 5) {
-    nomCentreDetectat.value = '';
-    return;
-  }
-  
-  // Si coincide con el del usuario logueado, lo cogemos del store
-  if (authStore.user?.perfil?.codi_centre === codi) {
-      nomCentreDetectat.value = authStore.user.perfil.nom || authStore.user.perfil.nom_oficial;
-      return;
-  }
-
-  try {
-    const response = await fetch(`http://localhost:3000/api/centres/${codi}`);
-    if (response.ok) {
-      const data = await response.json();
-      nomCentreDetectat.value = data.nom || data.denominacio_completa;
-    } else {
-      nomCentreDetectat.value = ''; 
+    const data = await response.json();
+    
+    // Si no tiene 'info_centre', forzamos la pestaña "Acollida"
+    if (!data.info_centre) {
+        tabActiva.value = 'acollida';
     }
-  } catch (error) {
-    console.error("Error buscant centre", error);
+    taller.value = data;
+  } catch (error) { 
+    console.error(error); 
+  } finally { 
+    loading.value = false; 
   }
 };
 
-// --- 3. AUTO-COMPLETAR AL ABRIR MODAL ---
-const abrirModal = () => {
-  form.alumnes_previstos = null;
-  form.observacions = '';
-  form.relevancia = 'Normal';
+onMounted(cargarTaller);
 
-  // DETECTAR SI EL USUARIO TIENE CENTRO ASIGNADO
+// --- 2. LÓGICA DE ABRIR EL MODAL ---
+const abrirModal = (modo) => {
+  modoFormulario.value = modo;
+  
+  // Reseteamos campos
+  form.observacions = '';
+  if (modo === 'assistencia') {
+      form.alumnes_previstos = null;
+  } else {
+      form.capacitat_proposada = 20; 
+  }
+
+  // >>> AQUÍ ESTÁ LA MAGIA DEL USUARIO <<<
+  // Si el usuario está logueado en Pinia y tiene un código de centro:
   const usuario = authStore.user;
   
   if (usuario && usuario.perfil && usuario.perfil.codi_centre) {
-      // Caso: INSTITUT
+      // 1. Asignamos el código
       form.codi_centre = usuario.perfil.codi_centre;
-      // Disparamos la búsqueda para que se rellene el nombre visualmente
+      // 2. Ejecutamos la búsqueda para que se rellene el nombre visualmente
       buscarNomCentre(form.codi_centre);
-  } else if (usuario && usuario.centre_id) {
-      // Caso: PROFESSOR 
-      // Si el backend te enviara el código del centro en el login, podrías ponerlo aquí.
   } else {
-      // Caso: Admin o Usuario nuevo
+      // Si es admin o usuario sin centro, lo dejamos vacío
       form.codi_centre = '';
       nomCentreDetectat.value = '';
   }
@@ -352,41 +325,75 @@ const abrirModal = () => {
   dialog.value = true;
 };
 
-// Computed para saber si debemos bloquear el campo (Estilo Dark Mode)
+// --- 3. FUNCIÓN COMPLETA DE BUSCAR CENTRO ---
+const buscarNomCentre = async (codi) => {
+    // Si borran el código, borramos el nombre
+    if (!codi || codi.length < 4) {
+        nomCentreDetectat.value = '';
+        return;
+    }
+
+    // Optimización: Si coincide con el usuario logueado, usamos datos locales (evita fetch)
+    if (authStore.user?.perfil?.codi_centre === codi) {
+        nomCentreDetectat.value = authStore.user.perfil.nom || authStore.user.perfil.nom_oficial;
+        return;
+    }
+
+    // Si no, preguntamos al backend
+    try {
+        const res = await fetch(`http://localhost:3000/api/centres/${codi}`);
+        if(res.ok) {
+            const data = await res.json();
+            // El backend puede devolver 'nom' o 'denominacio_completa'
+            nomCentreDetectat.value = data.nom || data.denominacio_completa;
+        } else {
+            nomCentreDetectat.value = ''; // No encontrado
+        }
+    } catch(error) {
+        console.error("Error fetching centre:", error);
+        nomCentreDetectat.value = '';
+    }
+};
+
+// Computed para bloquear el input si el usuario es un centro
 const isCampBloquejat = computed(() => {
-    // Si el usuario tiene un código de centro fijo, bloqueamos
     return !!(authStore.user?.perfil?.codi_centre);
 });
 
-// --- 4. VALIDACIÓN ---
+// Validaciones
 const reglasAlumnos = [
-  v => !!v || "Has d'indicar quants alumnes vindran.",
-  v => v > 0 || "Mínim 1 alumne.",
-  v => v <= taller.value.places_disponibles || `Només queden ${taller.value.places_disponibles} places!`
+  v => !!v || "Obligatori",
+  v => v > 0 || "Mínim 1 alumne",
+  // Solo validamos maximo si estamos en modo asistencia
+  v => !taller.value.places_disponibles || v <= taller.value.places_disponibles || "No queden tantes places"
 ];
 
-// --- 5. ENVIAR SOLICITUD ---
+// --- 4. ENVIAR SOLICITUD ---
 const enviarSolicitud = async () => {
   const { valid } = await formRef.value.validate();
   if (!valid) return;
-
+  
   if (!nomCentreDetectat.value) {
-      alert("Codi de centre invàlid o no trobat.");
+      alert("Codi de centre invàlid. Revisa'l.");
       return;
   }
 
   enviando.value = true;
-
   try {
     const payload = {
         taller_id: taller.value._id,
         codi_centre: form.codi_centre,
-        alumnes_previstos: parseInt(form.alumnes_previstos),
+        tipus: modoFormulario.value, // 'assistencia' o 'acollida'
         dia_preferit: form.dia_preferit,
-        relevancia: form.relevancia,
         observacions: form.observacions,
-        userId: authStore.user?._id // Enviamos ID de usuario
+        userId: authStore.user?._id
     };
+
+    if (modoFormulario.value === 'assistencia') {
+        payload.alumnes_previstos = parseInt(form.alumnes_previstos);
+    } else {
+        payload.capacitat_proposada = parseInt(form.capacitat_proposada);
+    }
 
     const response = await fetch('http://localhost:3000/api/solicituds', {
       method: 'POST',
@@ -394,55 +401,33 @@ const enviarSolicitud = async () => {
       body: JSON.stringify(payload)
     });
 
-    if (!response.ok) throw new Error('Error al servidor');
+    if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || 'Error en la solicitud');
+    }
 
     dialog.value = false;
     snackbar.value = true;
-    
-    await cargarTaller();
+    await cargarTaller(); // Recargar datos para actualizar barras de progreso
 
   } catch (error) {
-    alert("Error creant la sol·licitud.");
-    console.error(error);
+    alert(error.message);
   } finally {
     enviando.value = false;
   }
 };
 
-// --- HELPERS VISUALES ---
-const generarImagen = (t) => {
-  if (t.imatge && t.imatge.startsWith('http')) return t.imatge;
-  return `https://source.unsplash.com/1600x900/?education`;
-};
-
-const getColor = (m) => ({ A: 'indigo', B: 'teal', C: 'orange-darken-1' }[m] || 'grey');
-const getColorBarra = (n) => n <= 3 ? 'deep-orange' : 'success';
-const getColorText = (n) => n <= 3 ? 'text-deep-orange' : 'text-success';
-const calcularPorcentaje = (t) => {
-  if(!t.places_totals) return 0;
-  return ((t.places_totals - t.places_disponibles) / t.places_totals) * 100;
-};
+// --- Helpers visuales ---
+const generarImagen = (t) => t.imatge || `https://source.unsplash.com/1600x900/?education,technology`;
+const getColor = (m) => ({ A: 'indigo', B: 'teal', C: 'orange' }[m] || 'grey');
+const getColorBarra = (n) => n <= 5 ? 'red' : 'success';
+const getColorText = (n) => n <= 5 ? 'text-red' : 'text-success';
+const calcularPorcentaje = (t) => t.places_totals ? ((t.places_totals - t.places_disponibles)/t.places_totals)*100 : 0;
 </script>
 
 <style scoped>
-.text-primary-dark { color: #004B87; }
-.shadow-text { text-shadow: 0 2px 4px rgba(0,0,0,0.6); }
+.shadow-text { text-shadow: 0 2px 10px rgba(0,0,0,0.8); }
 .shadow-chip { box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
-.gap-3 { gap: 12px; }
-
-.sticky-sidebar {
-  position: sticky;
-  top: 100px;
-  z-index: 10;
-}
-
-/* ESTILO ESPECIAL PARA EL INPUT RESALTADO (FONDO NEGRO / LETRA BLANCA) */
-.input-resaltado :deep(input) {
-    color: white !important;
-    font-weight: bold;
-    letter-spacing: 0.5px;
-}
-.input-resaltado :deep(.v-field--disabled) {
-    opacity: 1 !important; /* Fuerza la visibilidad completa */
-}
+.text-primary-dark { color: #004B87; }
+.sticky-sidebar { position: sticky; top: 120px; z-index: 10; }
 </style>

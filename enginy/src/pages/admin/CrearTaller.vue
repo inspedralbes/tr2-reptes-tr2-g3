@@ -295,28 +295,51 @@ const form = reactive({
 const getColor = (m) => ({ A: 'indigo', B: 'teal', C: 'orange-darken-1' }[m] || 'grey');
 
 // LÓGICA DE ENVÍO
+// LÓGICA DE ENVÍO REAL
 const guardarTaller = async () => {
+  // 1. Validar formulario
   const { valid } = await formRef.value.validate();
   if (!valid) return;
 
   loading.value = true;
   
   try {
-    // Simulación de llamada API
-    console.log("Enviando datos:", JSON.stringify(form, null, 2));
-    
-    // Aquí iría tu fetch real
-    await new Promise(resolve => setTimeout(resolve, 1000)); 
+    // 2. Preparar los datos tal como los espera tu Backend (models.js)
+    // Fíjate que en tu modelo se llama 'detalls_tecnics', pero en el form es 'detalls'
+    const payload = {
+        codi: form.codi,
+        nom: form.nom,
+        imatge: form.imatge,
+        modalitat: form.modalitat,
+        places_totals: form.places_totals,
+        descripcio: form.descripcio,
+        detalls_tecnics: form.detalls // <--- IMPORTANTE: Renombrar para el backend
+    };
 
+    // 3. Petición POST al servidor (La parte que faltaba)
+    const response = await fetch('http://localhost:3000/api/tallers', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+        throw new Error("Error al guardar en la base de datos");
+    }
+
+    // 4. Éxito
     snackbar.value = true;
     
+    // 5. Redirigir al catálogo después de 1.5 segundos para ver el nuevo taller
     setTimeout(() => {
-      // Reset del form (opcional)
-      // form.nom = ''; 
+       router.push('/'); // O la ruta donde tengas el catálogo (ej: '/tallers')
     }, 1500);
 
   } catch (error) {
-    console.error(error);
+    console.error("Error guardant taller:", error);
+    alert("Error al guardar el taller. Revisa la consola.");
   } finally {
     loading.value = false;
   }

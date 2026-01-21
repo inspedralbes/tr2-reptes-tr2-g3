@@ -87,37 +87,58 @@ async function createSollicitud(centreUserId, tallerId, data) {
     const taller = await db.collection('tallers').findOne({ _id: new ObjectId(tallerId) });
     if (!taller) throw new Error("Taller no encontrado");
 
-    if (taller.places_disponibles < parseInt(data.alumnes_previstos)) {
-        throw new Error("No quedan plazas disponibles.");
+    // TIPO DE SOLICITUD: 'assistencia' (enviar alumnos) o 'acollida' (pedir ser sede)
+    const tipusSolicitud = data.tipus || 'assistencia'; 
+
+    // VALIDACIÓN ESPECÍFICA PARA ASISTENCIA (RESERVAR PLAZAS)
+    if (tipusSolicitud === 'assistencia') {
+        if (!taller.centre_codi_oficial) {
+             throw new Error("Este taller es solo una plantilla. Debes solicitar 'Acollir el taller' en tu centro.");
+        }
+        if (taller.places_disponibles < parseInt(data.alumnes_previstos)) {
+            throw new Error("No quedan plazas disponibles.");
+        }
     }
 
     const solicitudDoc = {
         centre_id: new ObjectId(centreUserId),
         taller_id: new ObjectId(tallerId),
+        tipus: tipusSolicitud, // <--- GUARDAMOS EL TIPO
         estat: 'pendent',
         data_solicitud: new Date(),
         codi_centre: data.codi_centre ? String(data.codi_centre).trim().padStart(8, '0') : null,
-        alumnes_previstos: parseInt(data.alumnes_previstos),
+        
+        // Datos comunes
         preferencies: {
             dia_preferit: data.dia_preferit,
             observacions: data.observacions,
-            // 👇 ¡ESTA ES LA LÍNEA QUE FALTABA! 👇
-            relevancia: data.relevancia || 'Normal' 
+            relevancia: data.relevancia || 'Normal'
         },
         professors_assignats_ids: [],
         checklist_seguiment: []
     };
 
+    // DATOS ESPECÍFICOS SEGÚN TIPO
+    if (tipusSolicitud === 'assistencia') {
+        solicitudDoc.alumnes_previstos = parseInt(data.alumnes_previstos);
+    } else {
+        // Si es 'acollida', el centro dice cuánta capacidad tiene su sala
+        solicitudDoc.capacitat_proposada = parseInt(data.capacitat_proposada);
+        // NO restamos plazas del taller original, porque esto creará un taller nuevo en el futuro
+    }
+
     const result = await db.collection('sollicituds').insertOne(solicitudDoc);
 
-    await db.collection('tallers').updateOne(
-        { _id: new ObjectId(tallerId) },
-        { $inc: { places_disponibles: -parseInt(data.alumnes_previstos) } }
-    );
+    // SOLO RESTAMOS PLAZAS SI ES ASISTENCIA A UN TALLER EXISTENTE
+    if (tipusSolicitud === 'assistencia') {
+        await db.collection('tallers').updateOne(
+            { _id: new ObjectId(tallerId) },
+            { $inc: { places_disponibles: -parseInt(data.alumnes_previstos) } }
+        );
+    }
 
     return result.insertedId;
 }
-
 async function createValoracio(sollicitudId, tallerId, tipoUsuario, respostes) {
     const db = await connectDB();
     const valoracioDoc = {
@@ -216,7 +237,7 @@ async function getAllTallersWithNames() {
         {
             $lookup: {
                 from: 'centres_oficials',
-                localField: 'centre_codi_oficial',
+                localField: 'centre_codi_oficial', // Campo que vincula con el centro anfitrión
                 foreignField: '_id',
                 as: 'info_centre'
             }
@@ -233,12 +254,15 @@ async function getAllTallersWithNames() {
                 places_disponibles: 1,
                 places_totals: 1,
                 detalls_tecnics: 1,
-                nom_institut: { $ifNull: ['$info_centre.nom', 'Institut Públic'] }
+                // Lógica para determinar si es un taller "Plantilla" o "Asignado"
+                es_plantilla: { $cond: { if: { $ifNull: ['$info_centre', false] }, then: false, else: true } },
+                nom_institut: { $ifNull: ['$info_centre.nom', 'Per determinar (Catàleg)'] },
+                adreca_institut: { $ifNull: ['$info_centre.adreca', null] }, // <--- AQUI LA DIRECCIÓN
+                municipi_institut: { $ifNull: ['$info_centre.municipi', null] }
             }
         }
     ]).toArray();
 }
-
 module.exports = {
     validarLogin, 
     createUsuari,

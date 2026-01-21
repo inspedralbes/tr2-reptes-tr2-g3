@@ -85,27 +85,33 @@
                 </div>
               </div>
 
-              <v-card-text class="flex-grow-1 pt-4 pb-2 px-5">
-                <div class="mb-3">
-                  <h3 class="text-h6 font-weight-bold text-grey-darken-4 mb-1" style="line-height: 1.3;">
-                    {{ taller.nom }}
-                  </h3>
-                  <div class="d-flex align-center text-caption text-grey-darken-1">
-                    <v-icon size="14" class="mr-1 text-grey">mdi-map-marker-outline</v-icon>
-                    <span class="text-truncate font-weight-medium">{{ taller.lloc }}</span>
-                  </div>
-                </div>
+            <v-card-text class="flex-grow-1 pt-4 pb-2 px-5">
+  <div class="mb-3">
+    <h3 class="text-h6 font-weight-bold text-grey-darken-4 mb-1" style="line-height: 1.3;">
+      {{ taller.nom }}
+    </h3>
+    
+    <div class="d-flex align-start text-caption text-grey-darken-1 mt-2">
+      <v-icon size="16" class="mr-1 mt-1 text-primary">mdi-map-marker</v-icon>
+      <div>
+        <div class="font-weight-bold text-body-2">{{ taller.lloc }}</div>
+        <div v-if="taller.adreca_institut" class="text-grey text-caption" style="line-height: 1.1;">
+          {{ taller.adreca_institut }}<br>
+          {{ taller.municipi_institut }}
+        </div>
+        <div v-else class="text-orange-darken-2 font-weight-bold text-caption mt-1">
+          Disponibilitat sota demanda
+        </div>
+      </div>
+    </div>
+  </div>
 
-                <div class="d-flex gap-2 flex-wrap mb-4">
-                   <div 
-                      v-for="(tag, index) in taller.tags" 
-                      :key="index"
-                      class="technical-tag"
-                   >
-                     {{ tag }}
-                   </div>
-                </div>
-              </v-card-text>
+  <div class="d-flex gap-2 flex-wrap mb-4 mt-3">
+     <div v-for="(tag, index) in taller.tags" :key="index" class="technical-tag">
+       {{ tag }}
+     </div>
+  </div>
+</v-card-text>
 
               <v-divider class="mx-5 border-opacity-50"></v-divider>
 
