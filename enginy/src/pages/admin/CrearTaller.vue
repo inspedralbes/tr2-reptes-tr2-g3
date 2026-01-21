@@ -334,7 +334,7 @@ const guardarTaller = async () => {
     
     // 5. Redirigir al catálogo después de 1.5 segundos para ver el nuevo taller
     setTimeout(() => {
-       router.push('/'); // O la ruta donde tengas el catálogo (ej: '/tallers')
+       router.push('/tallers');
     }, 1500);
 
   } catch (error) {

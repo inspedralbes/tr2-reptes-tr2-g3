@@ -20,6 +20,7 @@ import TallersProfessor from '@/pages/pagesProfessor/TallersProfessor.vue'
 import NavBarProfessor from '@/components/NavBarProfessor.vue'
 import veureSolicituds from '@/pages/pagesProfessor/veureSolicituds.vue'
 import TallerCentre from '@/pages/Instituts/TallerCentre.vue'
+import AssignarProfessors from '@/pages/Instituts/AssignarProfessors.vue'
 
 const routes = [
   {
@@ -27,6 +28,12 @@ const routes = [
     name: 'TallerCentre',
     component: TallerCentre,
     meta: { requiresAuth: true, role: 'centre' }
+  },
+  {
+    path: '/assignarProfessors',
+    name: 'AssignarProfessors',
+    component: AssignarProfessors,
+    meta: { requiresAuth: true, role: 'centre' } // O 'admin' si también quieres que entren
   },
   {
     path: '/veureSolicituds',

@@ -22,6 +22,7 @@ declare module 'vue-router/auto-routes' {
     '/admin/CrearTaller': RouteRecordInfo<'/admin/CrearTaller', '/admin/CrearTaller', Record<never, never>, Record<never, never>>,
     '/admin/CrearUsuaris': RouteRecordInfo<'/admin/CrearUsuaris', '/admin/CrearUsuaris', Record<never, never>, Record<never, never>>,
     '/admin/Solicituds': RouteRecordInfo<'/admin/Solicituds', '/admin/Solicituds', Record<never, never>, Record<never, never>>,
+    '/Instituts/AssignarProfessors': RouteRecordInfo<'/Instituts/AssignarProfessors', '/Instituts/AssignarProfessors', Record<never, never>, Record<never, never>>,
     '/Instituts/CrearSolicitud': RouteRecordInfo<'/Instituts/CrearSolicitud', '/Instituts/CrearSolicitud', Record<never, never>, Record<never, never>>,
     '/Instituts/TallerCentre': RouteRecordInfo<'/Instituts/TallerCentre', '/Instituts/TallerCentre', Record<never, never>, Record<never, never>>,
     '/Login': RouteRecordInfo<'/Login', '/Login', Record<never, never>, Record<never, never>>,
@@ -55,6 +56,10 @@ declare module 'vue-router/auto-routes' {
     }
     'src/pages/admin/Solicituds.vue': {
       routes: '/admin/Solicituds'
+      views: never
+    }
+    'src/pages/Instituts/AssignarProfessors.vue': {
+      routes: '/Instituts/AssignarProfessors'
       views: never
     }
     'src/pages/Instituts/CrearSolicitud.vue': {

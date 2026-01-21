@@ -95,9 +95,12 @@ app.get('/api/tallers/:id', async (req, res) => {
 
 app.post('/api/tallers', async (req, res) => {
     try {
+        console.log("Rebuda petició per crear taller:", req.body);
         const id = await createTaller(req.body);
+        console.log(`Taller creat correctament. ID: ${id}`);
         res.status(201).json({ message: 'Taller creat', id });
     } catch (error) {
+        console.error("Error creant taller:", error);
         res.status(400).json({ error: error.message });
     }
 });
@@ -120,10 +123,6 @@ app.get('/api/solicituds', async (req, res) => {
 app.post('/api/solicituds', async (req, res) => {
     try {
         console.log("Nueva solicitud:", req.body);
-        
-        // RECUPERAR ID DEL USUARIO
-        // 1. Si el frontend envía 'userId', lo usamos (Login real).
-        // 2. Si no, usamos un ID de prueba (Fallback por si acaso).
         const userId = req.body.userId || '65a1b2c3d4e5f67890123456';
 
             const { taller_id, alumnes_previstos, dia_preferit, observacions, codi_centre, relevancia } = req.body;
@@ -161,6 +160,44 @@ app.put('/api/solicituds/:id', async (req, res) => {
     }
 });
 
+// ==========================================
+// RUTAS DE GESTIÓN DE PROFESORS (NUEVO)
+// ==========================================
+
+app.get('/api/professors', async (req, res) => {
+    try {
+        const db = await connectDB();
+        // Obtenemos usuarios con rol 'professor'
+        const professors = await db.collection('usuaris').find({ rol: 'professor' }).toArray();
+        
+        // Devolvemos solo datos necesarios (evitamos enviar passwords o datos sensibles)
+        const sanitized = professors.map(p => ({ _id: p._id, nom: p.nom || p.email, email: p.email }));
+        res.json(sanitized);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.put('/api/solicituds/:id/professors', async (req, res) => {
+    try {
+        const db = await connectDB();
+        const { professors } = req.body; // Array de IDs de profesores
+
+        if (!Array.isArray(professors) || professors.length > 2) {
+            return res.status(400).json({ error: "Màxim 2 professors per sol·licitud." });
+        }
+
+        await db.collection('sollicituds').updateOne(
+            { _id: new ObjectId(req.params.id) },
+            { $set: { professors_assignats_ids: professors } }
+        );
+
+        res.json({ message: "Professors assignats correctament" });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: error.message });
+    }
+});
 
 // ==========================================
 // RUTAS DE CENTROS & DEBUG

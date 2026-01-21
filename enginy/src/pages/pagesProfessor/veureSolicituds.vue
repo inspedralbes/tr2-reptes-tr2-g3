@@ -62,12 +62,12 @@
               <tbody>
                 <tr v-for="sol in taller.solicituds" :key="sol._id">
                   <td class="py-3">
-                    <div class="font-weight-medium">{{ sol.nomCentre || 'Carregant...' }}</div>
-                    <div class="text-caption text-grey">Codi: {{ sol.codi_centre }}</div>
+                    <div class="font-weight-medium">{{ sol.centre_info?.nom_oficial || sol.nomCentre || 'Centre Desconegut' }}</div>
+                    <div class="text-caption text-grey">Codi: {{ sol.centre_info?.codi || sol.codi_centre || '---' }}</div>
                   </td>
                   <td>
                     <v-chip size="small" color="blue-grey" variant="outlined">
-                      {{ formatDate(sol.dia_preferit) }}
+                      {{ formatDate(sol.preferencies?.dia_preferit || sol.dia_preferit) }}
                     </v-chip>
                   </td>
                   <td class="text-center">
@@ -130,7 +130,9 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import NavBarProfessor from '../../components/NavBarProfessor.vue';
+import { useAuthStore } from '@/stores/auth';
 
+const authStore = useAuthStore();
 const tallers = ref([]);
 const solicituds = ref([]);
 const loading = ref(true);
@@ -145,7 +147,13 @@ onMounted(async () => {
       fetch('http://localhost:3000/api/solicituds')
     ]);
 
-    tallers.value = await resTallers.json();
+    const tallersData = await resTallers.json();
+    // Mapegem el lloc (institut) que ve del backend per mostrar-lo a la targeta
+    tallers.value = tallersData.map(t => ({
+      ...t,
+      lloc: t.nom_institut || 'Institut Públic'
+    }));
+
     solicituds.value = await resSolicituds.json();
 
     // --- DADES D'EXEMPLE (Si no hi ha dades a la BDD) ---
@@ -161,16 +169,6 @@ onMounted(async () => {
       ];
     }
 
-    // 2. Cargar nombres de centros para cada solicitud
-    for (const sol of solicituds.value) {
-      if (sol.codi_centre && !sol.nomCentre) {
-        fetch(`http://localhost:3000/api/centres/${sol.codi_centre}`)
-          .then(res => res.json())
-          .then(centre => { sol.nomCentre = centre.nom; })
-          .catch(() => { sol.nomCentre = 'Centre Desconegut'; });
-      }
-    }
-
   } catch (error) {
     console.error("Error carregant dades:", error);
   } finally {
@@ -180,12 +178,19 @@ onMounted(async () => {
 
 // Agrupa las solicitudes dentro de sus talleres correspondientes
 const tallersAssignats = computed(() => {
+  const userId = authStore.user?._id;
+
   return tallers.value.map(taller => {
     // Filtramos las solicitudes que pertenecen a este taller
     const solsDelTaller = solicituds.value.filter(s => {
       // El backend retorna l'objecte sencer a s.taller_id, però les dades demo usen string
       const idSol = s.taller_id && s.taller_id._id ? s.taller_id._id : s.taller_id;
-      return idSol === taller._id;
+      const esDelTaller = idSol === taller._id;
+      
+      // Filtrem per assignació al professor actual
+      const esAssignat = s.professors_assignats_ids && s.professors_assignats_ids.includes(userId);
+      
+      return esDelTaller && esAssignat;
     });
     return { ...taller, solicituds: solsDelTaller };
   }).filter(t => t.solicituds.length > 0); // Solo mostramos talleres con actividad
