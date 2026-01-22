@@ -268,12 +268,31 @@ const descargarPlantilla = () => {
 };
 
 // === 3. PROCESAR EXCEL (CON LOGICA DE NOMBRES) ===
-const procesarExcel = async () => {
-  // Vuetify devuelve un array en v-file-input
-  const files = archivoExcel.value;
-  if (!files || files.length === 0) return;
-  
-  const file = files[0]; // Tomamos el primero
+const procesarExcel = async (eventValue) => {
+  // eventValue viene desde @update:model-value; si no, usamos el ref archivoExcel
+  const incoming = typeof eventValue !== 'undefined' ? eventValue : archivoExcel.value;
+
+  // Normalizamos a un único file: puede ser File o Array
+  if (!incoming) return;
+
+  let file;
+  if (Array.isArray(incoming)) {
+    if (incoming.length === 0) return;
+    file = incoming[0];
+  } else {
+    file = incoming;
+  }
+
+  // Validar que realmente es un Blob/File antes de usar FileReader
+  const isBlobLike = file && (typeof File !== 'undefined' && file instanceof File || typeof Blob !== 'undefined' && file instanceof Blob);
+  if (!isBlobLike) {
+    // Puede ocurrir que Vuetify entregue un objeto diferente; mostramos mensaje útil
+    errorExcel.value = 'Fitxer no vàlid: selecciona un fitxer Excel (.xlsx/.xls/.csv).';
+    alumnosExtraidos.value = [];
+    procesando.value = false;
+    return;
+  }
+
   procesando.value = true;
   errorExcel.value = '';
   alumnosExtraidos.value = [];
@@ -291,7 +310,7 @@ const procesarExcel = async () => {
       const extracted = jsonData.map(row => {
         // Normalizamos las claves a minúsculas para buscar "nom" o "name"
         const keys = Object.keys(row);
-        
+
         const keyNombre = keys.find(k => k.toLowerCase().includes('nom') || k.toLowerCase().includes('name') || k.toLowerCase().includes('alum'));
         const keyCentro = keys.find(k => k.toLowerCase().includes('centr') || k.toLowerCase().includes('institut'));
 
@@ -317,7 +336,14 @@ const procesarExcel = async () => {
       procesando.value = false;
     }
   };
-  reader.readAsArrayBuffer(file);
+
+  try {
+    reader.readAsArrayBuffer(file);
+  } catch (err) {
+    console.error('Error leyendo fichero:', err);
+    errorExcel.value = 'No s’ha pogut llegir el fitxer seleccionat.';
+    procesando.value = false;
+  }
 };
 
 // === 4. GUARDAR EN BACKEND ===
