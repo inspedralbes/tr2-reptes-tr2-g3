@@ -56,7 +56,13 @@
                    <v-icon size="small">mdi-calendar</v-icon> {{ formataData(taller.data) }}
                 </div>
                 
-                <v-chip size="small" :color="taller.llista_assistencia?.length > 0 ? 'green' : 'orange'" variant="flat">
+                <v-chip 
+                  size="small" 
+                  :color="taller.llista_assistencia?.length > 0 ? 'green' : 'orange'" 
+                  variant="flat"
+                  @click="taller.llista_assistencia?.length > 0 && obrirModalLlistat(taller)"
+                  :class="{ 'cursor-pointer': taller.llista_assistencia?.length > 0 }"
+                >
                    {{ taller.llista_assistencia?.length > 0 ? 'Llistat Pujat' : 'Pendent Alumnes' }}
                 </v-chip>
               </v-card-text>
@@ -194,6 +200,51 @@
        {{ snackbarText }}
     </v-snackbar>
 
+    <v-dialog v-model="dialogLlistat" max-width="800px" persistent transition="dialog-bottom-transition">
+      <v-card class="rounded-xl">
+        <v-card-title class="bg-primary text-white py-4 px-6 d-flex justify-space-between align-center">
+          <span class="text-h6 font-weight-bold">
+            <v-icon class="mr-2">mdi-account-group</v-icon> Passar Llista i Gestionar Alumnes de {{ tallerPerMostrarLlistat?.nom }}
+          </span>
+          <v-btn icon="mdi-close" variant="text" color="white" @click="cerrarModalLlistat"></v-btn>
+        </v-card-title>
+
+        <v-card-text class="pa-6">
+          <v-card border elevation="0" max-height="400" class="overflow-y-auto bg-grey-lighten-5">
+            <v-table density="compact" class="bg-transparent">
+              <thead>
+                <tr>
+                  <th class="text-left font-weight-bold">Present</th>
+                  <th class="text-left font-weight-bold">Nom Alumne</th>
+                  <th class="text-left font-weight-bold">Centre</th>
+                  <th class="text-right font-weight-bold">Accions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(alumne, i) in alumnesDelTaller" :key="i">
+                  <td>
+                    <v-checkbox-btn v-model="alumne.presente"></v-checkbox-btn>
+                  </td>
+                  <td>{{ alumne.nombre }}</td>
+                  <td>{{ alumne.centro }}</td>
+                  <td class="text-right">
+                    <v-btn icon="mdi-delete" color="red" variant="text" size="small" @click="donarDeBaixa(i)"></v-btn>
+                  </td>
+                </tr>
+              </tbody>
+            </v-table>
+          </v-card>
+        </v-card-text>
+
+        <v-divider></v-divider>
+
+        <v-card-actions class="pa-4 bg-grey-lighten-5">
+          <v-spacer></v-spacer>
+          <v-btn color="primary" variant="flat" @click="guardarCanvisLlista" :loading="guardando">Guardar Canvis</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
   </v-main>
 </template>
 
@@ -219,6 +270,11 @@ const procesando = ref(false);
 const guardando = ref(false);
 const errorExcel = ref('');
 
+// Variables para mostrar el llistat
+const dialogLlistat = ref(false);
+const alumnesDelTaller = ref([]);
+const tallerPerMostrarLlistat = ref(null);
+
 // Feedback
 const snackbar = ref(false);
 const snackbarText = ref('');
@@ -229,7 +285,6 @@ onMounted(async () => {
   try {
     const userId = authStore.user?._id || 'ID_PRUEBA'; // Reemplaza ID_PRUEBA si no usas Pinia aún
     
-    // NOTA: Endpoint que deberías crear en el backend (ver respuesta anterior)
     const response = await fetch(`http://localhost:3000/api/app/profesor/${userId}/tallers`);
     
     if (!response.ok) throw new Error('Error al carregar tallers');
@@ -254,7 +309,6 @@ const descargarPlantilla = () => {
   // Crear hoja de trabajo
   const ws = XLSX.utils.json_to_sheet(datosEjemplo);
   
-  // Ajustar ancho de columnas (opcional, para que se vea bonito)
   ws['!cols'] = [{ wch: 30 }, { wch: 30 }];
 
   // Crear libro
@@ -267,10 +321,8 @@ const descargarPlantilla = () => {
 
 // === 3. PROCESAR EXCEL (CON LOGICA DE NOMBRES) ===
 const procesarExcel = async (eventValue) => {
-  // eventValue viene desde @update:model-value; si no, usamos el ref archivoExcel
   const incoming = typeof eventValue !== 'undefined' ? eventValue : archivoExcel.value;
 
-  // Normalizamos a un único file: puede ser File o Array
   if (!incoming) return;
 
   let file;
@@ -281,10 +333,8 @@ const procesarExcel = async (eventValue) => {
     file = incoming;
   }
 
-  // Validar que realmente es un Blob/File antes de usar FileReader
   const isBlobLike = file && (typeof File !== 'undefined' && file instanceof File || typeof Blob !== 'undefined' && file instanceof Blob);
   if (!isBlobLike) {
-    // Puede ocurrir que Vuetify entregue un objeto diferente; mostramos mensaje útil
     errorExcel.value = 'Fitxer no vàlid: selecciona un fitxer Excel (.xlsx/.xls/.csv).';
     alumnosExtraidos.value = [];
     procesando.value = false;
@@ -304,9 +354,7 @@ const procesarExcel = async (eventValue) => {
       const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
       const jsonData = XLSX.utils.sheet_to_json(firstSheet);
 
-      // Mapeo flexible de columnas
       const extracted = jsonData.map(row => {
-        // Normalizamos las claves a minúsculas para buscar "nom" o "name"
         const keys = Object.keys(row);
 
         const keyNombre = keys.find(k => k.toLowerCase().includes('nom') || k.toLowerCase().includes('name') || k.toLowerCase().includes('alum'));
@@ -315,8 +363,8 @@ const procesarExcel = async (eventValue) => {
         if (keyNombre) {
           return {
             nombre: row[keyNombre],
-            centro: keyCentro ? row[keyCentro] : (tallerSeleccionado.value?.nom_institut || 'Desconegut'), // Si no hay columna centro, usamos el del taller
-            presente: false // Para la App móvil luego
+            centro: keyCentro ? row[keyCentro] : (tallerSeleccionado.value?.nom_institut || 'Desconegut'),
+            presente: false 
           };
         }
         return null;
@@ -339,7 +387,7 @@ const procesarExcel = async (eventValue) => {
     reader.readAsArrayBuffer(file);
   } catch (err) {
     console.error('Error leyendo fichero:', err);
-    errorExcel.value = 'No s’ha pogut llegir el fitxer seleccionat.';
+    errorExcel.value = 'No s’ha pogut leer el fitxer seleccionat.';
     procesando.value = false;
   }
 };
@@ -349,11 +397,11 @@ const guardarAlumnos = async () => {
   guardando.value = true;
   try {
     const payload = {
-      sollicitud_id: tallerSeleccionado.value._id, // ID de la solicitud/taller asignado
+      sollicitud_id: tallerSeleccionado.value._id, 
       llista: alumnosExtraidos.value
     };
 
-    const response = await fetch('http://localhost:3000/api/app/assistencia', { // Reutilizamos el endpoint de la APP o creamos uno nuevo
+    const response = await fetch('http://localhost:3000/api/app/assistencia', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -365,7 +413,6 @@ const guardarAlumnos = async () => {
     snackbarColor.value = "success";
     snackbar.value = true;
     
-    // Actualizar lista local para que salga la etiqueta verde
     const index = tallers.value.findIndex(t => t._id === tallerSeleccionado.value._id);
     if(index !== -1) {
         tallers.value[index].llista_assistencia = alumnosExtraidos.value;
@@ -382,6 +429,59 @@ const guardarAlumnos = async () => {
   }
 };
 
+// --- Métodos para mostrar llistat ---
+const obrirModalLlistat = (taller) => {
+  tallerPerMostrarLlistat.value = taller;
+  // Deep copy para no modificar la lista original hasta guardar
+  alumnesDelTaller.value = JSON.parse(JSON.stringify(taller.llista_assistencia || []));
+  dialogLlistat.value = true;
+};
+
+const cerrarModalLlistat = () => {
+  dialogLlistat.value = false;
+};
+
+const donarDeBaixa = (index) => {
+  alumnesDelTaller.value.splice(index, 1);
+};
+
+const guardarCanvisLlista = async () => {
+  guardando.value = true;
+  try {
+    const payload = {
+      sollicitud_id: tallerPerMostrarLlistat.value._id,
+      llista: alumnesDelTaller.value
+    };
+
+    const response = await fetch('http://localhost:3000/api/app/assistencia', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if(!response.ok) throw new Error("Error al guardar");
+
+    snackbarText.value = "Canvis guardats correctament!";
+    snackbarColor.value = "success";
+    snackbar.value = true;
+
+    // Update local workshops list
+    const index = tallers.value.findIndex(t => t._id === tallerPerMostrarLlistat.value._id);
+    if(index !== -1) {
+        tallers.value[index].llista_assistencia = alumnesDelTaller.value;
+    }
+
+    cerrarModalLlistat();
+
+  } catch (e) {
+    snackbarText.value = "Error al guardar els canvis.";
+    snackbarColor.value = "error";
+    snackbar.value = true;
+  } finally {
+    guardando.value = false;
+  }
+};
+
 // Helpers
 const abrirModalExcel = (taller) => {
   tallerSeleccionado.value = taller;
@@ -390,7 +490,7 @@ const abrirModalExcel = (taller) => {
   dialogExcel.value = true;
 };
 const cerrarModalExcel = () => { dialogExcel.value = false; };
-const tallersFiltrats = computed(() => tallers.value.filter(t => t.nom_taller?.toLowerCase().includes(cerca.value.toLowerCase()) || !cerca.value)); // Ajustado a la estructura que definimos antes
+const tallersFiltrats = computed(() => tallers.value.filter(t => (t.nom?.toLowerCase().includes(cerca.value.toLowerCase())) || !cerca.value));
 const generarImagen = (t) => `https://source.unsplash.com/500x300/?education`;
 const formataData = (d) => d ? new Date(d).toLocaleDateString() : 'Data pendent';
 
@@ -401,4 +501,5 @@ const formataData = (d) => d ? new Date(d).toLocaleDateString() : 'Data pendent'
 .hover-card:hover { transform: translateY(-3px); border-color: #4CAF50 !important; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
 .gap-2 { gap: 8px; }
 .border-s-4 { border-left-width: 4px !important; }
+.cursor-pointer { cursor: pointer; }
 </style>
