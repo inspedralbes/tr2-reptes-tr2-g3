@@ -152,14 +152,12 @@
                   <tr>
                     <th class="text-left font-weight-bold">Nom Alumne</th>
                     <th class="text-left font-weight-bold">Centre</th>
-                    <th class="text-center font-weight-bold">Estat</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr v-for="(alumno, i) in alumnosExtraidos" :key="i">
                     <td>{{ alumno.nombre }}</td>
                     <td>{{ alumno.centro }}</td>
-                    <td class="text-center"><v-icon color="grey-lighten-1" size="small">mdi-clock-outline</v-icon></td>
                   </tr>
                 </tbody>
               </v-table>
