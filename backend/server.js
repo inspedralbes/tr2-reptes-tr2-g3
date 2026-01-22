@@ -13,9 +13,9 @@ const {
     createUsuari,          
     validarLogin,          
     getAllTallersWithNames,
-    // 👇 ESTAS SON LAS IMPORTANTES QUE FALTABAN 👇
     getTallersByProfessor, 
-    saveAssistencia        
+    saveAssistencia,
+    deleteAssistencia        
 } = require('./models');
 
 const app = express();
@@ -209,14 +209,38 @@ app.post('/api/app/assistencia', async (req, res) => {
     try {
         const { sollicitud_id, llista } = req.body;
         
+        console.log(`[API] Rebuda petició guardar assistència. ID: ${sollicitud_id}, Alumnes: ${llista?.length}`);
+
         if (!sollicitud_id || !llista) {
             return res.status(400).json({ error: "Falten dades (sollicitud_id o llista)" });
         }
 
-        await saveAssistencia(sollicitud_id, llista);
+        const result = await saveAssistencia(sollicitud_id, llista);
+        
+        if (result.matchedCount === 0) {
+            console.error(`[ERROR] No s'ha trobat cap sol·licitud amb ID: ${sollicitud_id}`);
+            // No devolvemos 404 estricto para no romper la UI si hay desincronización, pero avisamos
+            return res.status(404).json({ error: "No s'ha trobat la sol·licitud. Comprova que el taller existeix." });
+        }
+
+        console.log(`[INFO] ÈXIT: S'ha actualitzat la sol·licitud ${sollicitud_id}`);
+        console.log(`[INFO] MongoDB: Trobats=${result.matchedCount}, Modificats=${result.modifiedCount}`);
+        console.log(`[INFO] Alumnes guardats: ${llista.length}`);
+        
         res.json({ success: true, message: "Llistat guardat correctament" });
     } catch (error) {
         console.error("Error API Assistencia:", error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Borrar lista de asistencia
+app.delete('/api/app/assistencia/:id', async (req, res) => {
+    try {
+        await deleteAssistencia(req.params.id);
+        res.json({ success: true, message: "Llistat esborrat correctament" });
+    } catch (error) {
+        console.error("Error API Delete Assistencia:", error);
         res.status(500).json({ error: error.message });
     }
 });

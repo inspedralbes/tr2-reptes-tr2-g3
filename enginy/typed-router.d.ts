@@ -21,6 +21,7 @@ declare module 'vue-router/auto-routes' {
     '/': RouteRecordInfo<'/', '/', Record<never, never>, Record<never, never>>,
     '/admin/CrearTaller': RouteRecordInfo<'/admin/CrearTaller', '/admin/CrearTaller', Record<never, never>, Record<never, never>>,
     '/admin/CrearUsuaris': RouteRecordInfo<'/admin/CrearUsuaris', '/admin/CrearUsuaris', Record<never, never>, Record<never, never>>,
+    '/admin/Fases': RouteRecordInfo<'/admin/Fases', '/admin/Fases', Record<never, never>, Record<never, never>>,
     '/admin/Solicituds': RouteRecordInfo<'/admin/Solicituds', '/admin/Solicituds', Record<never, never>, Record<never, never>>,
     '/Instituts/AssignarProfessors': RouteRecordInfo<'/Instituts/AssignarProfessors', '/Instituts/AssignarProfessors', Record<never, never>, Record<never, never>>,
     '/Instituts/CrearSolicitud': RouteRecordInfo<'/Instituts/CrearSolicitud', '/Instituts/CrearSolicitud', Record<never, never>, Record<never, never>>,
@@ -51,6 +52,10 @@ declare module 'vue-router/auto-routes' {
     }
     'src/pages/admin/CrearUsuaris.vue': {
       routes: '/admin/CrearUsuaris'
+      views: never
+    }
+    'src/pages/admin/Fases.vue': {
+      routes: '/admin/Fases'
       views: never
     }
     'src/pages/admin/Solicituds.vue': {

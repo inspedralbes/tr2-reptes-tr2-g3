@@ -269,14 +269,18 @@ async function getAllTallersWithNames() {
 // --- NUEVO: APP & EXCEL - OBTENER TALLERES ASIGNADOS A UN PROFE ---
 async function getTallersByProfessor(profesorId) {
     const db = await connectDB();
+    
+    // Preparamos los IDs para buscar de forma segura (evita error si profesorId es 'ID_PRUEBA')
+    let idsBusqueda = [String(profesorId)];
+    if (ObjectId.isValid(profesorId)) {
+        idsBusqueda.push(new ObjectId(profesorId));
+    }
+
     // Buscamos solicitudes donde el profesor esté asignado
     return await db.collection('sollicituds').aggregate([
-        // Filtramos solicitudes que tengan al profesor en el array 'professors_assignats_ids'
-        // OJO: Si guardas IDs como string en el array, quita el 'new ObjectId()'
-        // Si los guardas como ObjectId, déjalo. Por defecto en mongo suelen ser ObjectId.
         { 
             $match: { 
-                professors_assignats_ids: { $in: [new ObjectId(profesorId), String(profesorId)] } 
+                professors_assignats_ids: { $in: idsBusqueda } 
             } 
         }, 
         {
@@ -301,6 +305,7 @@ async function getTallersByProfessor(profesorId) {
             $project: {
                 _id: 1, // ID de la solicitud
                 nom: '$taller_info.nom',
+                imatge: '$taller_info.imatge',
                 lloc: { $ifNull: ['$taller_info.nom_institut', 'Institut Públic'] },
                 data_solicitud: 1,
                 dia_preferit: '$preferencies.dia_preferit',
@@ -318,13 +323,33 @@ async function getTallersByProfessor(profesorId) {
 async function saveAssistencia(sollicitudId, llistaAlumnos) {
     const db = await connectDB();
     
+    if (!ObjectId.isValid(sollicitudId)) {
+        throw new Error("ID de sol·licitud no vàlid");
+    }
+
     // llistaAlumnos es el array que sacamos del Excel o de la App
     const result = await db.collection('sollicituds').updateOne(
         { _id: new ObjectId(sollicitudId) },
         { $set: { llista_assistencia: llistaAlumnos } }
     );
     
+    // Devolvemos el resultado para verificar en el server si se ha modificado algo
     return result;
+}
+
+// --- NUEVO: BORRAR ASISTENCIA ---
+async function deleteAssistencia(sollicitudId) {
+    const db = await connectDB();
+    
+    if (!ObjectId.isValid(sollicitudId)) {
+        throw new Error("ID de sol·licitud no vàlid");
+    }
+
+    // Vaciamos el array llista_assistencia
+    return await db.collection('sollicituds').updateOne(
+        { _id: new ObjectId(sollicitudId) },
+        { $set: { llista_assistencia: [] } }
+    );
 }
 
 // --- ACTUALIZAR EL EXPORT ---
@@ -339,5 +364,6 @@ module.exports = {
     getAllTallersWithNames,
     // AÑADE ESTAS DOS:
     getTallersByProfessor,
-    saveAssistencia
+    saveAssistencia,
+    deleteAssistencia
 };
