@@ -5,7 +5,7 @@
     <v-container style="max-width: 1200px;">
       
       <div class="mb-8 d-flex justify-space-between align-end">
-        <div>
+        <div class="mt-4">
           <h1 class="text-h3 font-weight-bold text-grey-darken-4 mb-2">
             Gestió de Professors
           </h1>
@@ -13,15 +13,6 @@
             Assigna els docents responsables (màxim 2) per a les teves sol·licituds aprovades.
           </p>
         </div>
-        <v-btn
-          to="/tallerCentre"
-          color="primary"
-          variant="tonal"
-          prepend-icon="mdi-arrow-left"
-          size="small"
-        >
-          Tornar
-        </v-btn>
       </div>
 
       <v-row v-if="loading">

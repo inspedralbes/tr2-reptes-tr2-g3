@@ -33,13 +33,7 @@
               Catàleg de Tallers
             </v-btn>
 
-            <v-btn 
-              to="/solicitarTaller" 
-              variant="text" 
-              class="text-none font-weight-bold text-blue-darken-4 rounded-0 h-100 menu-btn"
-            >
-              Sol·licitar Taller
-            </v-btn>
+
 
             <v-btn 
               to="/assignarProfessors" 
