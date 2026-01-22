@@ -172,7 +172,8 @@ app.put('/api/solicituds/:id', async (req, res) => {
 app.put('/api/solicituds/:id/professors', async (req, res) => {
     try {
         const db = await connectDB();
-        const { professors } = req.body; // Array de IDs
+        // AHORA RECIBIMOS TAMBIÉN 'info'
+        const { professors, info } = req.body; 
 
         if (!Array.isArray(professors) || professors.length > 2) {
             return res.status(400).json({ error: "Màxim 2 professors per sol·licitud." });
@@ -180,10 +181,15 @@ app.put('/api/solicituds/:id/professors', async (req, res) => {
 
         await db.collection('sollicituds').updateOne(
             { _id: new ObjectId(req.params.id) },
-            { $set: { professors_assignats_ids: professors } }
+            { 
+                $set: { 
+                    professors_assignats_ids: professors,
+                    assignacio_info: info || "" // Guardamos las notas de días/profes
+                } 
+            }
         );
 
-        res.json({ message: "Professors assignats correctament" });
+        res.json({ message: "Professors i detalls assignats correctament" });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

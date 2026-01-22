@@ -34,51 +34,58 @@
           elevation="0"
         >
           <v-card-text>
-            <v-row align="center">
-              <v-col cols="12" md="5">
-                <div class="text-h6 font-weight-bold text-grey-darken-3">{{ sol.taller_id.nom }}</div>
-              </v-col>
+  <v-row align="center">
+    <v-col cols="12" md="4">
+      <div class="text-h6 font-weight-bold text-grey-darken-3">{{ sol.taller_id.nom }}</div>
+      <div class="text-caption text-blue mt-1">
+         Data proposada: {{ sol.preferencies?.dia_preferit ? new Date(sol.preferencies.dia_preferit).toLocaleDateString() : 'Pendent' }}
+      </div>
+    </v-col>
 
-              <v-col cols="12" md="5">
-                <v-select
-                  v-model="sol.professors_assignats_ids"
-                  :items="professorsList"
-                  item-title="nom"
-                  item-value="_id"
-                  label="Professors Assignats"
-                  multiple
-                  chips
-                  closable-chips
-                  variant="outlined"
-                  density="compact"
-                  hide-details
-                  :rules="[v => v.length <= 2 || 'Màxim 2 professors']"
-                  @update:modelValue="checkLimit(sol)"
-                >
-                  <template v-slot:selection="{ item, index }">
-                    <v-chip v-if="index < 2" size="small">
-                      {{ item.title }}
-                    </v-chip>
-                    <span v-if="index === 2" class="text-grey text-caption align-self-center ml-2">
-                      (+{{ sol.professors_assignats_ids.length - 2 }} altres)
-                    </span>
-                  </template>
-                </v-select>
-              </v-col>
+    <v-col cols="12" md="4">
+      <v-select
+        v-model="sol.professors_assignats_ids"
+        :items="professorsList"
+        item-title="nom"
+        item-value="_id"
+        label="Professors Assignats"
+        multiple
+        chips
+        closable-chips
+        variant="outlined"
+        density="compact"
+        hide-details
+        :rules="[v => v.length <= 2 || 'Màxim 2 professors']"
+      ></v-select>
+    </v-col>
 
-              <v-col cols="12" md="2" class="text-right">
-                <v-btn 
-                  color="primary" 
-                  variant="tonal" 
-                  :loading="saving === sol._id"
-                  @click="guardarAssignacio(sol)"
-                  :disabled="sol.professors_assignats_ids && sol.professors_assignats_ids.length > 2"
-                >
-                  Guardar
-                </v-btn>
-              </v-col>
-            </v-row>
-          </v-card-text>
+    <v-col cols="12" md="4">
+        <v-textarea
+            v-model="sol.assignacio_info"
+            label="Detalls / Dies Diferents"
+            placeholder="Ex: Dilluns -> Joan, Dimarts -> Maria"
+            rows="1"
+            auto-grow
+            variant="outlined"
+            density="compact"
+            hide-details
+            class="mb-2"
+        ></v-textarea>
+
+        <div class="text-right">
+            <v-btn 
+              color="primary" 
+              variant="tonal" 
+              size="small"
+              :loading="saving === sol._id"
+              @click="guardarAssignacio(sol)"
+            >
+              Guardar
+            </v-btn>
+        </div>
+    </v-col>
+  </v-row>
+</v-card-text>
         </v-card>
       </div>
 
@@ -147,7 +154,10 @@ const guardarAssignacio = async (sol) => {
     const response = await fetch(`http://localhost:3000/api/solicituds/${sol._id}/professors`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ professors: sol.professors_assignats_ids || [] })
+ body: JSON.stringify({ 
+          professors: sol.professors_assignats_ids || [],
+          info: sol.assignacio_info || "" 
+      })
     });
 
     if (!response.ok) throw new Error('Error al guardar');

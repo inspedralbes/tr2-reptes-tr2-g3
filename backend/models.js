@@ -267,21 +267,27 @@ async function getAllTallersWithNames() {
 // ... (todo tu código anterior sigue igual)
 
 // --- NUEVO: APP & EXCEL - OBTENER TALLERES ASIGNADOS A UN PROFE ---
+// En models.js
+
 async function getTallersByProfessor(profesorId) {
     const db = await connectDB();
     
-    // Preparamos los IDs para buscar de forma segura (evita error si profesorId es 'ID_PRUEBA')
     let idsBusqueda = [String(profesorId)];
     if (ObjectId.isValid(profesorId)) {
         idsBusqueda.push(new ObjectId(profesorId));
     }
 
-    // Buscamos solicitudes donde el profesor esté asignado
+    // FECHA DE HOY (Para que no salgan talleres antiguos)
+    const hoy = new Date();
+    hoy.setHours(0,0,0,0);
+
     return await db.collection('sollicituds').aggregate([
         { 
-            $match: { 
-                professors_assignats_ids: { $in: idsBusqueda } 
-            } 
+           $match: { 
+                professors_assignats_ids: { $in: idsBusqueda },
+                // Filtro para mostrar solo talleres de hoy en adelante (Opcional)
+                "preferencies.dia_preferit": { $gte: hoy }   // <--- ¡LISTO!
+            }
         }, 
         {
             $lookup: {
@@ -294,31 +300,43 @@ async function getTallersByProfessor(profesorId) {
         { $unwind: '$taller_info' },
         {
             $lookup: {
-                from: 'centres_oficials',
+                from: 'centres_oficials', // Asegúrate que tu colección se llama así
                 localField: 'codi_centre', 
-                foreignField: '_id', // o 'codi' dependiendo de tu BDD
+                foreignField: '_id', // Tu ejemplo muestra "_id": "08000013", así que esto debería cruzar bien
                 as: 'centre_info'
             }
         },
         { $unwind: { path: '$centre_info', preserveNullAndEmptyArrays: true } },
         {
             $project: {
-                _id: 1, // ID de la solicitud
-                nom: '$taller_info.nom',
-                imatge: '$taller_info.imatge',
-                lloc: { $ifNull: ['$taller_info.nom_institut', 'Institut Públic'] },
-                data_solicitud: 1,
-                dia_preferit: '$preferencies.dia_preferit',
-                alumnes_previstos: 1,
-                nomCentre: '$centre_info.nom',
-                codi_centre: 1,
-                // IMPORTANTE: Devolvemos la lista para saber si ya se subió
-                llista_assistencia: { $ifNull: ['$llista_assistencia', []] } 
+             _id: 1, 
+             nom: '$taller_info.nom',
+             imatge: '$taller_info.imatge',
+                
+                // --- AQUÍ ESTÁ EL CAMBIO IMPORTANTE DEL MAPA ---
+                // Concatenamos: Nombre + Dirección (adreoa) + Municipio
+                lloc: { 
+                    $concat: [
+                        { $ifNull: ['$centre_info.denominacio_completa', 'Centre desconegut'] }, 
+                        ", ", 
+                        { $ifNull: ['$centre_info.adreoa', ''] }, // Usamos tu campo 'adreoa'
+                        ", ", 
+                        { $ifNull: ['$centre_info.nom_municipi', ''] }
+                    ] 
+                },
+
+              data_solicitud: 1,
+              dia_preferit: '$preferencies.dia_preferit',
+               assignacio_info: 1,
+
+               alumnes_previstos: 1,
+               nomCentre: { $ifNull: ['$centre_info.denominacio_completa', '$codi_centre'] },
+               codi_centre: 1,
+               llista_assistencia: { $ifNull: ['$llista_assistencia', []] }
             }
         }
     ]).toArray();
 }
-
 // --- NUEVO: APP & EXCEL - GUARDAR ASISTENCIA ---
 async function saveAssistencia(sollicitudId, llistaAlumnos) {
     const db = await connectDB();
