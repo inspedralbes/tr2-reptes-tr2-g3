@@ -3,6 +3,24 @@ const cors = require('cors');
 const { connectDB } = require('./db');
 const { ObjectId } = require('mongodb');
 const bcrypt = require('bcryptjs');
+const nodemailer = require('nodemailer'); // Importar nodemailer
+require('dotenv').config(); // Cargar variables de entorno
+
+// --- CONFIGURACIÓ NODEMAILER ---
+const transporter = nodemailer.createTransport({
+    host: process.env.EMAIL_HOST,
+    port: process.env.EMAIL_PORT,
+    secure: process.env.EMAIL_PORT === '465', // true for 465, false for other ports
+    auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+    },
+    // Afegim opció per a entorns de desenvolupament amb certificats autofirmats
+    tls: {
+        rejectUnauthorized: false
+    }
+});
+// --------------------------------
 
 // Importamos TODAS las funciones del modelo (Asegúrate de que models.js tenga estas exportaciones)
 const { 
@@ -172,7 +190,6 @@ app.put('/api/solicituds/:id', async (req, res) => {
 app.put('/api/solicituds/:id/professors', async (req, res) => {
     try {
         const db = await connectDB();
-        // AHORA RECIBIMOS TAMBIÉN 'info'
         const { professors, info } = req.body; 
 
         if (!Array.isArray(professors) || professors.length > 2) {
@@ -184,13 +201,75 @@ app.put('/api/solicituds/:id/professors', async (req, res) => {
             { 
                 $set: { 
                     professors_assignats_ids: professors,
-                    assignacio_info: info || "" // Guardamos las notas de días/profes
+                    assignacio_info: info || "" 
                 } 
             }
         );
 
+        // --- LÒGICA D'ENVIAMENT DE CORREU ---
+        try {
+            // 1. Obtenir la sol·licitud per als detalls del taller
+            const sollicitud = await db.collection('sollicituds').findOne({ _id: new ObjectId(req.params.id) });
+            if (!sollicitud) {
+                // Aquesta situació és improbable si l'actualització anterior va anar bé,
+                // però ho mantenim per seguretat.
+                console.error(`[EMAIL] Sol·licitud ${req.params.id} no trobada DESPRÉS d'actualitzar.`);
+                // No retornem un error fatal, ja que l'assignació principal va funcionar.
+                // Simplement registrem el problema i continuem.
+            } else {
+                // 2. Obtenir el nom del taller
+                const taller = await db.collection('tallers').findOne({ _id: new ObjectId(sollicitud.taller_id) });
+                const nomTaller = taller ? taller.nom : 'Taller desconegut';
+
+                // 3. Iterar pels professors assignats i enviar correu a cadascun
+                for (const professorId of professors) {
+                    if (!ObjectId.isValid(professorId)) {
+                        console.error(`[EMAIL] ID de professor invàlid: ${professorId}. No s'enviarà correu.`);
+                        continue;
+                    }
+
+                    const professor = await db.collection('usuaris').findOne({ _id: new ObjectId(professorId) });
+
+                    if (professor && professor.email) {
+                        const professorName = professor.perfil?.nom || professor.email;
+                        const mailOptions = {
+                            from: `"Notificacions TR2" <${process.env.EMAIL_USER}>`,
+                            to: professor.email,
+                            subject: `✔️ Has estat assignat a un nou taller: ${nomTaller}`,
+                            html: `
+                                <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+                                    <h2>Hola ${professorName},</h2>
+                                    <p>T'informem que has estat assignat al taller <strong>"${nomTaller}"</strong>.</p>
+                                    <p>Pots consultar els detalls i gestionar l'assistència dels alumnes a través de la plataforma.</p>
+                                    <hr>
+                                    <p style="font-size: 0.9em; color: #555;">
+                                        Aquest és un correu automàtic. Si us plau, no responguis a aquest missatge.
+                                    </p>
+                                </div>
+                            `,
+                        };
+
+                        try {
+                            await transporter.sendMail(mailOptions);
+                            console.log(`[EMAIL] Correu de notificació enviat a ${professor.email} per al taller ${nomTaller}.`);
+                        } catch (emailError) {
+                            console.error(`[EMAIL] Error enviant correu a ${professor.email}:`, emailError);
+                        }
+                    } else {
+                        console.warn(`[EMAIL] No s'ha trobat l'email del professor amb ID ${professorId} o l'usuari no existeix.`);
+                    }
+                }
+            }
+        } catch (emailLogicError) {
+            // Si hi ha un error en la lògica d'enviament de correus,
+            // no fem que la petició principal falli. Només ho registrem.
+            console.error(`[EMAIL] Ha ocorregut un error greu en la lògica d'enviament de correus:`, emailLogicError);
+        }
+        // --- FINAL LÒGICA D'ENVIAMENT DE CORREU ---
+
         res.json({ message: "Professors i detalls assignats correctament" });
     } catch (error) {
+        // Aquest error només captura errors de l'actualització de la base de dades, no dels correus.
         res.status(500).json({ error: error.message });
     }
 });
