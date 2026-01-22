@@ -277,16 +277,10 @@ async function getTallersByProfessor(profesorId) {
         idsBusqueda.push(new ObjectId(profesorId));
     }
 
-    // FECHA DE HOY (Para que no salgan talleres antiguos)
-    const hoy = new Date();
-    hoy.setHours(0,0,0,0);
-
     return await db.collection('sollicituds').aggregate([
         { 
            $match: { 
-                professors_assignats_ids: { $in: idsBusqueda },
-                // Filtro para mostrar solo talleres de hoy en adelante (Opcional)
-                "preferencies.dia_preferit": { $gte: hoy }   // <--- ¡LISTO!
+                professors_assignats_ids: { $in: idsBusqueda }
             }
         }, 
         {
