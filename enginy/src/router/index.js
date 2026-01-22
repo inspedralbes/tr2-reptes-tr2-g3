@@ -18,7 +18,6 @@ import Solicituds  from '@/pages/admin/Solicituds.vue'
 import CrearUsuaris from '@/pages/admin/CrearUsuaris.vue'
 import TallersProfessor from '@/pages/pagesProfessor/TallersProfessor.vue'
 import NavBarProfessor from '@/components/NavBarProfessor.vue'
-import veureSolicituds from '@/pages/pagesProfessor/veureSolicituds.vue'
 import TallerCentre from '@/pages/Instituts/TallerCentre.vue'
 import AssignarProfessors from '@/pages/Instituts/AssignarProfessors.vue'
 
@@ -34,12 +33,6 @@ const routes = [
     name: 'AssignarProfessors',
     component: AssignarProfessors,
     meta: { requiresAuth: true, role: 'centre' } // O 'admin' si también quieres que entren
-  },
-  {
-    path: '/veureSolicituds',
-    name: 'veureSolicituds',
-    component: veureSolicituds,
-    meta: { requiresAuth: true, role: 'professor' }
   },
   {
     path: '/navBarProfessor',
