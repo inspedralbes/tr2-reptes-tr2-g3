@@ -34,6 +34,21 @@
 
 
     <v-container style="max-width: 1200px;">
+
+      <v-alert
+        v-if="faseActual !== 1 && !carregant"
+        type="warning"
+        variant="tonal"
+        class="mb-6"
+        border="start"
+        prominent
+        icon="mdi-clock-alert-outline"
+      >
+        <template #title>
+          <div class="font-weight-bold">Període d'inscripció tancat</div>
+        </template>
+        Actualment no és possible realitzar noves inscripcions o sol·licituds. El sistema es troba en la <strong>FASE {{ nomFaseActual }}</strong>.
+      </v-alert>
       
       <v-row v-if="carregant">
         <v-col cols="12" md="4" v-for="n in 3" :key="n">
@@ -59,7 +74,6 @@
               border
               class="rounded-lg h-100 d-flex flex-column hover-card bg-white" 
               @click="veureDetall(taller)"
-              :disabled="taller.places_disponibles === 0"
             >
               <div class="img-container">
                 <v-img 
@@ -82,6 +96,9 @@
                 
                 <div v-if="taller.places_disponibles === 0" class="overlay-full d-flex align-center justify-center">
                   <span class="text-white font-weight-bold text-uppercase bg-black px-3 py-1 rounded">Exhaurit</span>
+                </div>
+                <div v-else-if="faseActual !== 1 && !carregant" class="overlay-full d-flex align-center justify-center" style="background: rgba(0,0,0,0.4)">
+                  <span class="text-white font-weight-bold text-uppercase bg-orange-darken-2 px-3 py-1 rounded">Inscripció Tancada</span>
                 </div>
               </div>
 
@@ -152,29 +169,51 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import NavBar from '@/components/NavBar.vue';
+import { useAuthStore } from '@/stores/auth';
 
 const router = useRouter();
 const cerca = ref('');
 const tallers = ref([]);
 const carregant = ref(true);
+const faseActual = ref(null);
+const authStore = useAuthStore();
+
+const nomFaseActual = computed(() => {
+  const mapaFases = {
+    2: "DE VALIDACIÓ",
+    3: "D'ASSIGNACIÓ"
+  };
+  return mapaFases[faseActual.value] || 'TANCADA';
+});
 
 onMounted(async () => {
   try {
-    const response = await fetch('http://localhost:3000/api/tallers');
-    if (!response.ok) throw new Error('Network error');
-    
-    const data = await response.json();
+    const [tallersResponse, configResponse] = await Promise.all([
+      fetch('http://localhost:3000/api/tallers'),
+      fetch('http://localhost:3000/api/config')
+    ]);
 
-    tallers.value = data.map(t => ({
+    if (!tallersResponse.ok) throw new Error('Error de xarxa al carregar tallers');
+    
+    const tallersData = await tallersResponse.json();
+
+    tallers.value = tallersData.map(t => ({
       ...t,
       // Generamos tags basados en los detalles técnicos
       tags: Object.keys(t.detalls_tecnics || {})
             .filter(key => t.detalls_tecnics[key] === true)
             .map(key => key.charAt(0).toUpperCase() + key.slice(1)), 
       
-      // CAMBIO IMPORTANTE: Asignamos el nombre del instituto que viene del backend
       lloc: t.nom_institut || "Institut Públic" 
     }));
+
+    if (configResponse.ok) {
+      const configData = await configResponse.json();
+      faseActual.value = configData.faseActual;
+    } else {
+      // Si falla la config, asumimos que está abierto para no bloquear
+      faseActual.value = 1;
+    }
   } catch (error) {
     console.error(error);
   } finally {
@@ -232,8 +271,11 @@ const generarImagen = (taller) => {
 };
 
 const veureDetall = (taller) => {
-  if (taller.places_disponibles === 0) return; 
-  router.push(`/crearSolicitud/${taller._id}`);
+  if (authStore.user?.rol === 'admin') {
+    router.push('/fases');
+  } else {
+    router.push(`/crearSolicitud/${taller._id}`);
+  }
 };
 </script>
 

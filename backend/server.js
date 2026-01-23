@@ -29,7 +29,9 @@ const {
     updateEstatSolicitud,
     createUsuari,          
     validarLogin,          
-    getAllTallersWithNames
+    getAllTallersWithNames,
+    getConfig,
+    updateFase
 } = require('./models');
 
 const app = express();
@@ -379,6 +381,35 @@ app.delete('/api/app/assistencia/:id', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+
+// ==========================================
+// 5. CONFIGURACIÓ DEL SISTEMA
+// ==========================================
+
+app.get('/api/config', async (req, res) => {
+    try {
+        const config = await getConfig();
+        res.json({ faseActual: config.faseActual });
+    } catch (error) {
+        console.error("Error obtenint config:", error);
+        res.status(500).json({ error: 'Error del servidor' });
+    }
+});
+
+app.put('/api/config/update-fase', async (req, res) => {
+    try {
+        const { nuevaFase } = req.body;
+        if (typeof nuevaFase === 'undefined') {
+            return res.status(400).json({ error: "Falta el paràmetre 'nuevaFase'" });
+        }
+        await updateFase(nuevaFase);
+        res.json({ success: true, message: `Fase actualitzada a ${nuevaFase}` });
+    } catch (error) {
+        console.error("Error actualitzant fase:", error);
+        res.status(400).json({ error: error.message });
+    }
+});
+
 
 // ==========================================
 // 5. CENTROS Y UTILIDADES

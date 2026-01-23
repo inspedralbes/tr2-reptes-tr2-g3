@@ -365,6 +365,41 @@ async function deleteAssistencia(sollicitudId) {
     );
 }
 
+async function getConfig() {
+    const db = await connectDB();
+    const collection = db.collection('configuracio');
+    let config = await collection.findOne({ _id: 'main_config' });
+
+    if (!config) {
+        console.log("No s'ha trobat configuració, creant una per defecte.");
+        const defaultConfig = {
+            _id: 'main_config',
+            faseActual: 1, // Per defecte: Fase d'Inscripció
+            data_creacio: new Date()
+        };
+        await collection.insertOne(defaultConfig);
+        return defaultConfig;
+    }
+    return config;
+}
+
+async function updateFase(nuevaFase) {
+    const db = await connectDB();
+    const collection = db.collection('configuracio');
+    
+    const faseNum = parseInt(nuevaFase);
+    if (isNaN(faseNum) || ![1, 2, 3].includes(faseNum)) {
+        throw new Error("Fase no vàlida. Ha de ser 1, 2 o 3.");
+    }
+
+    const result = await collection.updateOne(
+        { _id: 'main_config' },
+        { $set: { faseActual: faseNum, data_modificacio: new Date() } },
+        { upsert: true }
+    );
+    return result;
+}
+
 // --- ACTUALIZAR EL EXPORT ---
 module.exports = {
     validarLogin, 
@@ -378,5 +413,7 @@ module.exports = {
     // AÑADE ESTAS DOS:
     getTallersByProfessor,
     saveAssistencia,
-    deleteAssistencia
+    deleteAssistencia,
+    getConfig,
+    updateFase
 };

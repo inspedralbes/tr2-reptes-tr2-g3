@@ -88,27 +88,40 @@
                         </div>
                         <v-progress-linear :model-value="calcularPorcentaje(taller)" :color="getColorBarra(taller.places_disponibles)" height="8" rounded></v-progress-linear>
                         
-                        <v-btn block size="x-large" color="primary" class="mt-6 font-weight-bold" @click="abrirModal('assistencia')" :disabled="taller.places_disponibles === 0">
-                           {{ taller.places_disponibles > 0 ? 'Reservar Places' : 'Complet' }}
+                        <v-alert v-if="faseActual !== 1" type="warning" variant="tonal" class="mt-6 text-caption" density="compact">
+                          El període d'inscripció està tancat. El sistema es troba en la <strong>fase {{ nomFaseActual }}</strong>.
+                        </v-alert>
+
+                        <v-btn block size="x-large" color="primary" :class="faseActual !== 1 ? 'mt-4' : 'mt-6'" class="font-weight-bold" @click="abrirModal('assistencia')" :disabled="taller.places_disponibles === 0 || faseActual !== 1">
+                           {{ faseActual !== 1 ? 'Inscripció Tancada' : (taller.places_disponibles > 0 ? 'Reservar Places' : 'Complet') }}
                         </v-btn>
                       </div>
-                      <div v-else class="text-center py-8 text-grey">
-                        <v-icon size="40" class="mb-2">mdi-map-marker-off</v-icon>
-                        <p>Aquest taller encara no té una ubicació programada.</p>
+                      <div v-else>
+                        <v-alert v-if="faseActual !== 1" type="warning" variant="tonal" class="mt-6 text-caption" density="compact">
+                          El període d'inscripció està tancat. El sistema es troba en la <strong>fase {{ nomFaseActual }}</strong>.
+                        </v-alert>
+                        <div v-else class="text-center py-8 text-grey">
+                          <v-icon size="40" class="mb-2">mdi-map-marker-off</v-icon>
+                          <p>Aquest taller no té ubicació. Pots sol·licitar acollir-lo a la pestanya 'Ser Sede'.</p>
+                        </div>
                       </div>
                     </div>
                   </v-window-item>
 
                   <v-window-item value="acollida">
                     <div class="bg-blue-grey-lighten-5 pa-6">
+                      <v-alert v-if="faseActual !== 1" type="warning" variant="tonal" class="mb-4 text-caption" density="compact">
+                          El període de sol·licituds està tancat. El sistema es troba en la <strong>fase {{ nomFaseActual }}</strong>.
+                       </v-alert>
+
                       <div class="text-subtitle-1 font-weight-bold mb-2 text-blue-grey-darken-3">
                         Vols fer aquest taller al teu centre?
                       </div>
                       <p class="text-body-2 text-blue-grey-darken-1 mb-4">
                         Sol·licita que els formadors vinguin a les teves instal·lacions.
                       </p>
-                      <v-btn block size="x-large" color="blue-grey-darken-3" class="text-white font-weight-bold" @click="abrirModal('acollida')">
-                        <v-icon start>mdi-hand-wave</v-icon> Sol·licitar Ser Sede
+                      <v-btn block size="x-large" color="blue-grey-darken-3" class="text-white font-weight-bold" @click="abrirModal('acollida')" :disabled="faseActual !== 1">
+                        <v-icon start>mdi-hand-wave</v-icon> {{ faseActual !== 1 ? 'Sol·licitud Tancada' : 'Sol·licitar Ser Sede' }}
                       </v-btn>
                     </div>
                   </v-window-item>
@@ -263,6 +276,7 @@ const modoFormulario = ref('assistencia');
 // Datos del taller y del centro
 const taller = ref({});
 const nomCentreDetectat = ref(''); 
+const faseActual = ref(null);
 
 // Formulario reactivo
 const form = reactive({
@@ -274,26 +288,43 @@ const form = reactive({
   observacions: ''
 });
 
-// --- 1. CARGAR DATOS DEL TALLER ---
-const cargarTaller = async () => {
+const nomFaseActual = computed(() => {
+  const mapaFases = {
+    2: "de Validació",
+    3: "d'Assignació"
+  };
+  return mapaFases[faseActual.value] || 'desconeguda';
+});
+
+// --- 1. CARGAR DATOS INICIALES (TALLER Y CONFIG) ---
+const cargarDatos = async () => {
+  loading.value = true;
   try {
     const id = route.params.id;
-    const response = await fetch(`http://localhost:3000/api/tallers/${id}`);
-    const data = await response.json();
+    const [tallerRes, configRes] = await Promise.all([
+      fetch(`http://localhost:3000/api/tallers/${id}`),
+      fetch(`http://localhost:3000/api/config`)
+    ]);
+
+    const data = await tallerRes.json();
+    if (configRes.ok) {
+      const configData = await configRes.json();
+      faseActual.value = configData.faseActual;
+    }
     
-    // Si no tiene 'info_centre', forzamos la pestaña "Acollida"
-    if (!data.info_centre) {
+    // Si no tiene 'info_centre' y la inscripción está abierta, forzamos la pestaña "Acollida"
+    if (!data.info_centre && faseActual.value === 1) {
         tabActiva.value = 'acollida';
     }
     taller.value = data;
   } catch (error) { 
     console.error(error); 
   } finally { 
-    loading.value = false; 
+    loading.value = false;
   }
 };
 
-onMounted(cargarTaller);
+onMounted(cargarDatos);
 
 // --- 2. LÓGICA DE ABRIR EL MODAL ---
 const abrirModal = (modo) => {
@@ -408,7 +439,7 @@ const enviarSolicitud = async () => {
 
     dialog.value = false;
     snackbar.value = true;
-    await cargarTaller(); // Recargar datos para actualizar barras de progreso
+    await cargarDatos(); // Recargar datos para actualizar barras de progreso
 
   } catch (error) {
     alert(error.message);

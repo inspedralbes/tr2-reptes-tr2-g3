@@ -20,8 +20,15 @@ import TallersProfessor from '@/pages/pagesProfessor/TallersProfessor.vue'
 import NavBarProfessor from '@/components/NavBarProfessor.vue'
 import TallerCentre from '@/pages/Instituts/TallerCentre.vue'
 import AssignarProfessors from '@/pages/Instituts/AssignarProfessors.vue'
+import Fases from '@/pages/admin/Fases.vue'
 
 const routes = [
+  {
+    path: '/fases',
+    name: 'Fases',
+    component: Fases,
+    meta: { requiresAuth: true, role: 'admin' }
+  },
   {
     path: '/tallerCentre',
     name: 'TallerCentre',
@@ -75,7 +82,7 @@ const routes = [
     path: '/crearSolicitud/:id',
     name: 'CrearSolicitud',
     component: CrearSolicitud,
-    meta: { requiresAuth: true, role: 'centre' }
+    meta: { requiresAuth: true, roles: ['centre', 'professor'] }
   },
   {
     path: '/solicituds',
@@ -118,15 +125,29 @@ router.beforeEach(async (to, from, next) => {
   }
 
   // 3. Control de Acceso por Rol (RBAC)
-  if (to.meta.role && authStore.isAuthenticated) {
-    if (to.meta.role !== userRole) {
-      if (userRole === 'professor') return next('/tallersProfessor')
-      if (userRole === 'admin') return next('/tallers')
-      if (userRole === 'centre') return next('/tallerCentre')
-      return next('/tallers')
+  const requiredRole = to.meta.role;
+  const requiredRoles = to.meta.roles;
+
+  if ((requiredRole || requiredRoles) && authStore.isAuthenticated) {
+    // El admin siempre tiene acceso
+    if (userRole === 'admin') {
+      return next();
+    }
+
+    let hasAccess = false;
+    if (requiredRole) {
+      hasAccess = userRole === requiredRole;
+    } else if (requiredRoles) {
+      hasAccess = requiredRoles.includes(userRole);
+    }
+
+    if (!hasAccess) {
+      // Si no tiene acceso, redirigir a su página principal
+      if (userRole === 'professor') return next('/tallersProfessor');
+      if (userRole === 'centre') return next('/tallerCentre');
+      return next('/tallers'); // Fallback
     }
   }
-
 
   // 4. Todo correcto, continuar
   next()
