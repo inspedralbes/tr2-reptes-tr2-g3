@@ -392,11 +392,35 @@ async function updateFase(nuevaFase) {
         throw new Error("Fase no vàlida. Ha de ser 1, 2 o 3.");
     }
 
-    const result = await collection.updateOne(
+    return await collection.updateOne(
         { _id: 'main_config' },
         { $set: { faseActual: faseNum, data_modificacio: new Date() } },
         { upsert: true }
     );
+}
+
+// --- NUEVO: ELIMINAR TALLER (CON VERIFICACIÓN) ---
+async function deleteTaller(tallerId) {
+    const db = await connectDB();
+    
+    if (!ObjectId.isValid(tallerId)) {
+        throw new Error("ID de taller no válido.");
+    }
+    const id = new ObjectId(tallerId);
+
+    // Verificación previa: No eliminar si hay solicitudes asociadas
+    const numSolicitudes = await db.collection('sollicituds').countDocuments({ taller_id: id });
+    if (numSolicitudes > 0) {
+        throw new Error(`No es pot eliminar el taller. Té ${numSolicitudes} sol·licitud(s) associada(s).`);
+    }
+
+    // Eliminar el taller
+    const result = await db.collection('tallers').deleteOne({ _id: id });
+
+    if (result.deletedCount === 0) {
+        throw new Error("No s'ha trobat el taller per eliminar.");
+    }
+
     return result;
 }
 
@@ -415,5 +439,6 @@ module.exports = {
     saveAssistencia,
     deleteAssistencia,
     getConfig,
-    updateFase
+    updateFase,
+    deleteTaller
 };
