@@ -3,26 +3,25 @@ const cors = require('cors');
 const { connectDB } = require('./db');
 const { ObjectId } = require('mongodb');
 const bcrypt = require('bcryptjs');
-const nodemailer = require('nodemailer'); // Importar nodemailer
-require('dotenv').config(); // Cargar variables de entorno
+const nodemailer = require('nodemailer'); 
+require('dotenv').config(); 
 
 // --- CONFIGURACIÓ NODEMAILER ---
 const transporter = nodemailer.createTransport({
     host: process.env.EMAIL_HOST,
     port: process.env.EMAIL_PORT,
-    secure: process.env.EMAIL_PORT === '465', // true for 465, false for other ports
+    secure: process.env.EMAIL_PORT === '465', 
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
     },
-    // Afegim opció per a entorns de desenvolupament amb certificats autofirmats
     tls: {
         rejectUnauthorized: false
     }
 });
 // --------------------------------
 
-// Importamos TODAS las funciones del modelo (Asegúrate de que models.js tenga estas exportaciones)
+// Importamos SOLO las funciones básicas que ya tenías en models
 const { 
     createTaller, 
     createSollicitud, 
@@ -30,17 +29,14 @@ const {
     updateEstatSolicitud,
     createUsuari,          
     validarLogin,          
-    getAllTallersWithNames,
-    getTallersByProfessor, 
-    saveAssistencia,
-    deleteAssistencia        
+    getAllTallersWithNames
 } = require('./models');
 
 const app = express();
 const PORT = 3000;
 
 app.use(cors());
-app.use(express.json({ limit: '50mb' })); // Aumentado el límite por si subes Excels grandes
+app.use(express.json({ limit: '50mb' })); 
 
 // ==========================================
 // 1. AUTENTICACIÓN Y USUARIOS
@@ -63,7 +59,6 @@ app.post('/api/login', async (req, res) => {
                     email: user.email,
                     rol: user.rol,
                     perfil: user.perfil,
-                    // Si es profe, enviamos su centre_id o lo que necesites
                     centre_id: user.centre_id 
                 }
             });
@@ -87,12 +82,33 @@ app.post('/api/usuaris', async (req, res) => {
     }
 });
 
-// OBTENER LISTA DE PROFESORES (Para asignar en el panel de admin)
+// OBTENER LISTA DE PROFESORES 
+// (Lo hacemos directo a BD para no depender de cambios en models.js)
 app.get('/api/professors', async (req, res) => {
     try {
         const db = await connectDB();
-        const professors = await db.collection('usuaris').find({ rol: 'professor' }).toArray();
-        // Devolvemos datos limpios
+
+        const { centre_id, codi } = req.query;
+
+        let filter = { rol: 'professor' };
+
+        if (centre_id) {
+            try {
+                const oid = new ObjectId(centre_id);
+                filter.centre_id = oid;
+            } catch (e) {
+                filter.centre_id = centre_id;
+            }
+        } else if (codi) {
+            const centre = await db.collection('centres_oficials').findOne({ $or: [{ _id: codi }, { codi: codi }] });
+            if (centre) {
+                filter.centre_id = centre._id;
+            } else {
+                return res.json([]);
+            }
+        }
+
+        const professors = await db.collection('usuaris').find(filter).toArray();
         const sanitized = professors.map(p => ({ 
             _id: p._id, 
             nom: p.perfil?.nom || p.email, 
@@ -123,7 +139,6 @@ app.get('/api/tallers/:id', async (req, res) => {
         const taller = await db.collection('tallers').findOne({ _id: new ObjectId(req.params.id) });
         if (!taller) return res.status(404).json({ error: 'Taller no trobat' });
         
-        // Buscamos info del centro si la tiene
         if (taller.centre_codi_oficial) {
              const centro = await db.collection('centres_oficials').findOne({ _id: taller.centre_codi_oficial });
              taller.info_centre = centro;
@@ -150,6 +165,8 @@ app.post('/api/tallers', async (req, res) => {
 
 app.get('/api/solicituds', async (req, res) => {
     try {
+        // NOTA: Si ves que no salen los días, es porque 'getAllSolicitudes' en models
+        // necesita tener 'assignacio_info: 1'. Si no quieres tocar models, avísame.
         const solicitudes = await getAllSolicitudes();
         res.json(solicitudes);
     } catch (error) {
@@ -159,10 +176,9 @@ app.get('/api/solicituds', async (req, res) => {
 
 app.post('/api/solicituds', async (req, res) => {
     try {
-        const userId = req.body.userId || '65a1b2c3d4e5f67890123456'; // Fallback ID
-        const { taller_id, tipus, alumnes_previstos, capacitat_proposada } = req.body;
+        const userId = req.body.userId || '65a1b2c3d4e5f67890123456'; 
+        const { taller_id } = req.body;
 
-        // Validaciones básicas
         if (!taller_id) return res.status(400).json({ error: "Falta el ID del taller" });
 
         const id = await createSollicitud(userId, taller_id, req.body);
@@ -186,47 +202,37 @@ app.put('/api/solicituds/:id', async (req, res) => {
     }
 });
 
-// ASIGNAR PROFESORES A UNA SOLICITUD
+// ASIGNAR PROFESORES A UNA SOLICITUD (CON CORREO)
 app.put('/api/solicituds/:id/professors', async (req, res) => {
     try {
         const db = await connectDB();
+        // Recibimos 'info' que son los días escritos en el frontend
         const { professors, info } = req.body; 
 
         if (!Array.isArray(professors) || professors.length > 2) {
             return res.status(400).json({ error: "Màxim 2 professors per sol·licitud." });
         }
 
+        // 1. GUARDAMOS EN BASE DE DATOS
         await db.collection('sollicituds').updateOne(
             { _id: new ObjectId(req.params.id) },
             { 
                 $set: { 
                     professors_assignats_ids: professors,
-                    assignacio_info: info || "" 
+                    assignacio_info: info || "" // <--- AQUÍ SE GUARDA LA FECHA/TEXTO
                 } 
             }
         );
 
         // --- LÒGICA D'ENVIAMENT DE CORREU ---
         try {
-            // 1. Obtenir la sol·licitud per als detalls del taller
             const sollicitud = await db.collection('sollicituds').findOne({ _id: new ObjectId(req.params.id) });
-            if (!sollicitud) {
-                // Aquesta situació és improbable si l'actualització anterior va anar bé,
-                // però ho mantenim per seguretat.
-                console.error(`[EMAIL] Sol·licitud ${req.params.id} no trobada DESPRÉS d'actualitzar.`);
-                // No retornem un error fatal, ja que l'assignació principal va funcionar.
-                // Simplement registrem el problema i continuem.
-            } else {
-                // 2. Obtenir el nom del taller
+            if (sollicitud) {
                 const taller = await db.collection('tallers').findOne({ _id: new ObjectId(sollicitud.taller_id) });
                 const nomTaller = taller ? taller.nom : 'Taller desconegut';
 
-                // 3. Iterar pels professors assignats i enviar correu a cadascun
                 for (const professorId of professors) {
-                    if (!ObjectId.isValid(professorId)) {
-                        console.error(`[EMAIL] ID de professor invàlid: ${professorId}. No s'enviarà correu.`);
-                        continue;
-                    }
+                    if (!ObjectId.isValid(professorId)) continue;
 
                     const professor = await db.collection('usuaris').findOne({ _id: new ObjectId(professorId) });
 
@@ -240,48 +246,95 @@ app.put('/api/solicituds/:id/professors', async (req, res) => {
                                 <div style="font-family: Arial, sans-serif; line-height: 1.6;">
                                     <h2>Hola ${professorName},</h2>
                                     <p>T'informem que has estat assignat al taller <strong>"${nomTaller}"</strong>.</p>
+                                    <p><strong>Detalls / Dies:</strong> ${info || 'Consultar a la plataforma'}</p>
                                     <p>Pots consultar els detalls i gestionar l'assistència dels alumnes a través de la plataforma.</p>
                                     <hr>
-                                    <p style="font-size: 0.9em; color: #555;">
-                                        Aquest és un correu automàtic. Si us plau, no responguis a aquest missatge.
-                                    </p>
+                                    <p style="font-size: 0.9em; color: #555;">Missatge automàtic.</p>
                                 </div>
                             `,
                         };
-
-                        try {
-                            await transporter.sendMail(mailOptions);
-                            console.log(`[EMAIL] Correu de notificació enviat a ${professor.email} per al taller ${nomTaller}.`);
-                        } catch (emailError) {
-                            console.error(`[EMAIL] Error enviant correu a ${professor.email}:`, emailError);
-                        }
-                    } else {
-                        console.warn(`[EMAIL] No s'ha trobat l'email del professor amb ID ${professorId} o l'usuari no existeix.`);
+                        await transporter.sendMail(mailOptions);
+                        console.log(`[EMAIL] Enviat a ${professor.email}`);
                     }
                 }
             }
         } catch (emailLogicError) {
-            // Si hi ha un error en la lògica d'enviament de correus,
-            // no fem que la petició principal falli. Només ho registrem.
-            console.error(`[EMAIL] Ha ocorregut un error greu en la lògica d'enviament de correus:`, emailLogicError);
+            console.error(`[EMAIL] Error enviant correus:`, emailLogicError);
         }
-        // --- FINAL LÒGICA D'ENVIAMENT DE CORREU ---
+        // --- FINAL LÒGICA CORREU ---
 
         res.json({ message: "Professors i detalls assignats correctament" });
     } catch (error) {
-        // Aquest error només captura errors de l'actualització de la base de dades, no dels correus.
         res.status(500).json({ error: error.message });
     }
 });
 
 // ==========================================
-// 4. RUTAS APP / EXCEL (PROFESORES)  <--- ¡ESTO ES LO QUE TE FALTABA!
+// 4. RUTAS APP / EXCEL (Lógica directa aquí para no tocar models.js)
 // ==========================================
 
 // Obtener talleres asignados a un profesor concreto
 app.get('/api/app/profesor/:id/tallers', async (req, res) => {
     try {
-        const tallers = await getTallersByProfessor(req.params.id);
+        const db = await connectDB();
+        const profesorId = req.params.id;
+        
+        // Lógica de búsqueda (que antes estaba en getTallersByProfessor)
+        let idsBusqueda = [String(profesorId)];
+        if (ObjectId.isValid(profesorId)) {
+            idsBusqueda.push(new ObjectId(profesorId));
+        }
+
+        const tallers = await db.collection('sollicituds').aggregate([
+            { 
+               $match: { 
+                    professors_assignats_ids: { $in: idsBusqueda }
+                }
+            }, 
+            {
+                $lookup: {
+                    from: 'tallers',
+                    localField: 'taller_id',
+                    foreignField: '_id',
+                    as: 'taller_info'
+                }
+            },
+            { $unwind: '$taller_info' },
+            {
+                $lookup: {
+                    from: 'centres_oficials',
+                    localField: 'codi_centre', 
+                    foreignField: '_id',
+                    as: 'centre_info'
+                }
+            },
+            { $unwind: { path: '$centre_info', preserveNullAndEmptyArrays: true } },
+            {
+                $project: {
+                 _id: 1, 
+                 nom: '$taller_info.nom',
+                 imatge: '$taller_info.imatge',
+                 // Mapa de dirección
+                 lloc: { 
+                    $concat: [
+                        { $ifNull: ['$centre_info.denominacio_completa', 'Centre desconegut'] }, 
+                        ", ", 
+                        { $ifNull: ['$centre_info.adreca', ''] }, 
+                        ", ", 
+                        { $ifNull: ['$centre_info.nom_municipi', ''] }
+                    ] 
+                 },
+                 data_solicitud: 1,
+                 dia_preferit: '$preferencies.dia_preferit',
+                 assignacio_info: 1,
+                 alumnes_previstos: 1,
+                 nomCentre: { $ifNull: ['$centre_info.denominacio_completa', '$codi_centre'] },
+                 codi_centre: 1,
+                 llista_assistencia: { $ifNull: ['$llista_assistencia', []] }
+                }
+            }
+        ]).toArray();
+
         res.json(tallers);
     } catch (error) {
         console.error("Error API App:", error);
@@ -289,28 +342,21 @@ app.get('/api/app/profesor/:id/tallers', async (req, res) => {
     }
 });
 
-// Guardar lista de asistencia (desde Excel o App)
+// Guardar lista de asistencia
 app.post('/api/app/assistencia', async (req, res) => {
     try {
         const { sollicitud_id, llista } = req.body;
-        
-        console.log(`[API] Rebuda petició guardar assistència. ID: ${sollicitud_id}, Alumnes: ${llista?.length}`);
+        console.log(`[API] Guardar assistència ID: ${sollicitud_id}`);
 
         if (!sollicitud_id || !llista) {
-            return res.status(400).json({ error: "Falten dades (sollicitud_id o llista)" });
+            return res.status(400).json({ error: "Falten dades" });
         }
 
-        const result = await saveAssistencia(sollicitud_id, llista);
-        
-        if (result.matchedCount === 0) {
-            console.error(`[ERROR] No s'ha trobat cap sol·licitud amb ID: ${sollicitud_id}`);
-            // No devolvemos 404 estricto para no romper la UI si hay desincronización, pero avisamos
-            return res.status(404).json({ error: "No s'ha trobat la sol·licitud. Comprova que el taller existeix." });
-        }
-
-        console.log(`[INFO] ÈXIT: S'ha actualitzat la sol·licitud ${sollicitud_id}`);
-        console.log(`[INFO] MongoDB: Trobats=${result.matchedCount}, Modificats=${result.modifiedCount}`);
-        console.log(`[INFO] Alumnes guardats: ${llista.length}`);
+        const db = await connectDB();
+        const result = await db.collection('sollicituds').updateOne(
+            { _id: new ObjectId(sollicitud_id) },
+            { $set: { llista_assistencia: llista } }
+        );
         
         res.json({ success: true, message: "Llistat guardat correctament" });
     } catch (error) {
@@ -322,10 +368,14 @@ app.post('/api/app/assistencia', async (req, res) => {
 // Borrar lista de asistencia
 app.delete('/api/app/assistencia/:id', async (req, res) => {
     try {
-        await deleteAssistencia(req.params.id);
+        const db = await connectDB();
+        await db.collection('sollicituds').updateOne(
+            { _id: new ObjectId(req.params.id) },
+            { $set: { llista_assistencia: [] } }
+        );
         res.json({ success: true, message: "Llistat esborrat correctament" });
     } catch (error) {
-        console.error("Error API Delete Assistencia:", error);
+        console.error("Error API Delete:", error);
         res.status(500).json({ error: error.message });
     }
 });

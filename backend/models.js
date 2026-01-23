@@ -190,6 +190,7 @@ async function getAllSolicitudes() {
                 alumnes_previstos: 1,
                 preferencies: 1,
                 professors_assignats_ids: 1,
+                assignacio_info: 1,
                 centre_info: {
                     nom_oficial: { 
                         $ifNull: [
