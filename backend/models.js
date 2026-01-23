@@ -365,6 +365,31 @@ async function deleteAssistencia(sollicitudId) {
     );
 }
 
+// --- NUEVO: ELIMINAR TALLER (CON VERIFICACIÓN) ---
+async function deleteTaller(tallerId) {
+    const db = await connectDB();
+    
+    if (!ObjectId.isValid(tallerId)) {
+        throw new Error("ID de taller no válido.");
+    }
+    const id = new ObjectId(tallerId);
+
+    // Verificación previa: No eliminar si hay solicitudes asociadas
+    const numSolicitudes = await db.collection('sollicituds').countDocuments({ taller_id: id });
+    if (numSolicitudes > 0) {
+        throw new Error(`No es pot eliminar el taller. Té ${numSolicitudes} sol·licitud(s) associada(s).`);
+    }
+
+    // Eliminar el taller
+    const result = await db.collection('tallers').deleteOne({ _id: id });
+
+    if (result.deletedCount === 0) {
+        throw new Error("No s'ha trobat el taller per eliminar.");
+    }
+
+    return result;
+}
+
 // --- ACTUALIZAR EL EXPORT ---
 module.exports = {
     validarLogin, 
@@ -378,5 +403,6 @@ module.exports = {
     // AÑADE ESTAS DOS:
     getTallersByProfessor,
     saveAssistencia,
-    deleteAssistencia
+    deleteAssistencia,
+    deleteTaller
 };
