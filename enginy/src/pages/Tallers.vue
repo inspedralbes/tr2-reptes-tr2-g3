@@ -34,21 +34,6 @@
 
 
     <v-container style="max-width: 1200px;">
-
-      <v-alert
-        v-if="faseActual !== 1 && !carregant"
-        type="warning"
-        variant="tonal"
-        class="mb-6"
-        border="start"
-        prominent
-        icon="mdi-clock-alert-outline"
-      >
-        <template #title>
-          <div class="font-weight-bold">Període d'inscripció tancat</div>
-        </template>
-        Actualment no és possible realitzar noves inscripcions o sol·licituds. El sistema es troba en la <strong>FASE {{ nomFaseActual }}</strong>.
-      </v-alert>
       
       <v-row v-if="carregant">
         <v-col cols="12" md="4" v-for="n in 3" :key="n">
@@ -97,7 +82,7 @@
                 <div v-if="taller.places_disponibles === 0" class="overlay-full d-flex align-center justify-center">
                   <span class="text-white font-weight-bold text-uppercase bg-black px-3 py-1 rounded">Exhaurit</span>
                 </div>
-                <div v-else-if="faseActual !== 1 && !carregant" class="overlay-full d-flex align-center justify-center" style="background: rgba(0,0,0,0.4)">
+                <div v-else-if="taller.fase !== 1" class="overlay-full d-flex align-center justify-center" style="background: rgba(0,0,0,0.4)">
                   <span class="text-white font-weight-bold text-uppercase bg-orange-darken-2 px-3 py-1 rounded">Inscripció Tancada</span>
                 </div>
               </div>
@@ -175,23 +160,11 @@ const router = useRouter();
 const cerca = ref('');
 const tallers = ref([]);
 const carregant = ref(true);
-const faseActual = ref(null);
 const authStore = useAuthStore();
-
-const nomFaseActual = computed(() => {
-  const mapaFases = {
-    2: "DE VALIDACIÓ",
-    3: "D'ASSIGNACIÓ"
-  };
-  return mapaFases[faseActual.value] || 'TANCADA';
-});
 
 onMounted(async () => {
   try {
-    const [tallersResponse, configResponse] = await Promise.all([
-      fetch('http://localhost:3000/api/tallers'),
-      fetch('http://localhost:3000/api/config')
-    ]);
+    const tallersResponse = await fetch('http://localhost:3000/api/tallers');
 
     if (!tallersResponse.ok) throw new Error('Error de xarxa al carregar tallers');
     
@@ -199,6 +172,7 @@ onMounted(async () => {
 
     tallers.value = tallersData.map(t => ({
       ...t,
+      fase: t.fase || 1, // Assegurem que la fase té un valor per defecte
       // Generamos tags basados en los detalles técnicos
       tags: Object.keys(t.detalls_tecnics || {})
             .filter(key => t.detalls_tecnics[key] === true)
@@ -206,14 +180,6 @@ onMounted(async () => {
       
       lloc: t.nom_institut || "Institut Públic" 
     }));
-
-    if (configResponse.ok) {
-      const configData = await configResponse.json();
-      faseActual.value = configData.faseActual;
-    } else {
-      // Si falla la config, asumimos que está abierto para no bloquear
-      faseActual.value = 1;
-    }
   } catch (error) {
     console.error(error);
   } finally {
@@ -272,7 +238,7 @@ const generarImagen = (taller) => {
 
 const veureDetall = (taller) => {
   if (authStore.user?.rol === 'admin') {
-    router.push('/fases');
+    router.push(`/fases/${taller._id}`);
   } else {
     router.push(`/crearSolicitud/${taller._id}`);
   }

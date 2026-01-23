@@ -24,7 +24,7 @@ import Fases from '@/pages/admin/Fases.vue'
 
 const routes = [
   {
-    path: '/fases',
+    path: '/fases/:id',
     name: 'Fases',
     component: Fases,
     meta: { requiresAuth: true, role: 'admin' }

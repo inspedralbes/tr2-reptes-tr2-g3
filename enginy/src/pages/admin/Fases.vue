@@ -1,35 +1,45 @@
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, computed } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 
 const API_URL = 'http://localhost:3000/api'
 const router = useRouter()
+const route = useRoute()
 
+const taller = ref(null)
 const faseActual = ref(null)
 const cargandoFase = ref(false)
 const mensaje = ref({ show: false, text: '', color: '' })
 
-const cargarConfiguracion = async () => {
+const tallerId = route.params.id;
+
+const nomFase = computed(() => {
+    const mapa = { 1: "Inscripció", 2: "Validació", 3: "Assignació" };
+    return mapa[faseActual.value] || 'Desconeguda';
+});
+
+const cargarTaller = async () => {
   try {
-    const res = await fetch(`${API_URL}/config`)
+    const res = await fetch(`${API_URL}/tallers/${tallerId}`)
     if (res.ok) {
       const data = await res.json()
-      faseActual.value = data.faseActual
+      taller.value = data;
+      faseActual.value = data.fase || 1;
     }
-  } catch (e) { console.error("Error al cargar fase", e) }
+  } catch (e) { console.error("Error al cargar dades del taller", e) }
 }
 
 const cambiarFase = async (valorFase) => {
   cargandoFase.value = true
   try {
-    const res = await fetch(`${API_URL}/config/update-fase`, { 
+    const res = await fetch(`${API_URL}/tallers/${tallerId}/fase`, { 
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ nuevaFase: valorFase }) 
     })
     if (!res.ok) throw new Error('Error en la respuesta')
     
-    mensaje.value = { show: true, text: 'Fase actualitzada correctament', color: 'success' }
+    mensaje.value = { show: true, text: 'Fase del taller actualitzada correctament', color: 'success' }
   } catch (e) {
     mensaje.value = { show: true, text: 'No s’ha pogut connectar amb el servidor', color: 'error' }
   } finally {
@@ -37,7 +47,7 @@ const cambiarFase = async (valorFase) => {
   }
 }
 
-onMounted(cargarConfiguracion)
+onMounted(cargarTaller)
 </script>
 
 <template>
@@ -46,14 +56,14 @@ onMounted(cargarConfiguracion)
       Tornar al Panell
     </v-btn>
 
-    <h1 class="text-h4 font-weight-bold mb-6">Configuració de Fases del Sistema</h1>
+    <h1 class="text-h4 font-weight-bold mb-6">Configuració de Fases per a: {{ taller?.nom }}</h1>
     
     <v-card variant="outlined" class="pa-8 border-consorci bg-white">
       <div class="d-flex align-center mb-6 ga-4">
         <v-icon size="40" color="black">mdi-sync</v-icon>
         <div>
-          <div class="text-h6 font-weight-bold">Fase Actual: {{ faseActual }}</div>
-          <div class="text-caption text-grey">Selecciona la fase activa per a tots els usuaris del sistema.</div>
+          <div class="text-h6 font-weight-bold">Fase Actual: {{ faseActual }} ({{ nomFase }})</div>
+          <div class="text-caption text-grey">Selecciona la fase activa per a aquest taller.</div>
         </div>
       </div>
 

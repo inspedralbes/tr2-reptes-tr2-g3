@@ -73,7 +73,8 @@ async function createTaller(data) {
         places_totals: parseInt(data.places_totals),
         places_disponibles: parseInt(data.places_totals),
         actiu: true,
-        detalls_tecnics: data.detalls_tecnics || {}
+        detalls_tecnics: data.detalls_tecnics || {},
+        fase: 1 // Per defecte, la fase és Inscripció
     };
 
     const result = await db.collection('tallers').insertOne(tallerDoc);
@@ -86,6 +87,11 @@ async function createSollicitud(centreUserId, tallerId, data) {
 
     const taller = await db.collection('tallers').findOne({ _id: new ObjectId(tallerId) });
     if (!taller) throw new Error("Taller no encontrado");
+
+    // Comprovació de la fase del taller
+    if ((taller.fase || 1) !== 1) {
+        throw new Error("El període d'inscripció per a aquest taller està tancat.");
+    }
 
     // TIPO DE SOLICITUD: 'assistencia' (enviar alumnos) o 'acollida' (pedir ser sede)
     const tipusSolicitud = data.tipus || 'assistencia'; 
@@ -256,6 +262,7 @@ async function getAllTallersWithNames() {
                 places_disponibles: 1,
                 places_totals: 1,
                 detalls_tecnics: 1,
+                fase: { $ifNull: ['$fase', 1] }, // Retornem la fase del taller, per defecte 1
                 // Lógica para determinar si es un taller "Plantilla" o "Asignado"
                 es_plantilla: { $cond: { if: { $ifNull: ['$info_centre', false] }, then: false, else: true } },
                 nom_institut: { $ifNull: ['$info_centre.nom', 'Per determinar (Catàleg)'] },
@@ -365,40 +372,24 @@ async function deleteAssistencia(sollicitudId) {
     );
 }
 
-async function getConfig() {
+async function updateTallerFase(tallerId, nuevaFase) {
     const db = await connectDB();
-    const collection = db.collection('configuracio');
-    let config = await collection.findOne({ _id: 'main_config' });
-
-    if (!config) {
-        console.log("No s'ha trobat configuració, creant una per defecte.");
-        const defaultConfig = {
-            _id: 'main_config',
-            faseActual: 1, // Per defecte: Fase d'Inscripció
-            data_creacio: new Date()
-        };
-        await collection.insertOne(defaultConfig);
-        return defaultConfig;
+    
+    if (!ObjectId.isValid(tallerId)) {
+        throw new Error("ID de taller no válido.");
     }
-    return config;
-}
-
-async function updateFase(nuevaFase) {
-    const db = await connectDB();
-    const collection = db.collection('configuracio');
+    const id = new ObjectId(tallerId);
     
     const faseNum = parseInt(nuevaFase);
     if (isNaN(faseNum) || ![1, 2, 3].includes(faseNum)) {
         throw new Error("Fase no vàlida. Ha de ser 1, 2 o 3.");
     }
 
-    return await collection.updateOne(
-        { _id: 'main_config' },
-        { $set: { faseActual: faseNum, data_modificacio: new Date() } },
-        { upsert: true }
+    return await db.collection('tallers').updateOne(
+        { _id: id },
+        { $set: { fase: faseNum } }
     );
 }
-
 // --- NUEVO: ELIMINAR TALLER (CON VERIFICACIÓN) ---
 async function deleteTaller(tallerId) {
     const db = await connectDB();
@@ -438,7 +429,6 @@ module.exports = {
     getTallersByProfessor,
     saveAssistencia,
     deleteAssistencia,
-    getConfig,
-    updateFase,
+    updateTallerFase,
     deleteTaller
 };
