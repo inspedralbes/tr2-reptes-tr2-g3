@@ -52,11 +52,11 @@ onMounted(cargarTaller)
 
 <template>
   <v-container class="pa-10">
-    <v-btn variant="text" prepend-icon="mdi-arrow-left" @click="router.back()" class="mb-5">
-      Tornar al Panell
+    <v-btn variant="text" color="black" prepend-icon="mdi-arrow-left" @click="router.push('/tallers')" class="mb-5">
+      Tornar
     </v-btn>
 
-    <h1 class="text-h4 font-weight-bold mb-6">Configuració de Fases per a: {{ taller?.nom }}</h1>
+    <h1 class="text-h4 font-weight-bold mb-6 text-black">Configuració de Fases per a: {{ taller?.nom }}</h1>
     
     <v-card variant="outlined" class="pa-8 border-consorci bg-white">
       <div class="d-flex align-center mb-6 ga-4">
