@@ -2,7 +2,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 
-const API_URL = 'http://localhost:3000/api'
+const API_URL = 'https://enginygrup3.dam.inspedralbes.cat/api'
 const router = useRouter()
 const route = useRoute()
 

@@ -340,7 +340,7 @@ const buscarNomCentre = async (codi) => {
 
   loadingCentre.value = true;
   try {
-    const response = await fetch(`http://localhost:3000/api/centres/${codi}`);
+    const response = await fetch(`https://enginygrup3.dam.inspedralbes.cat/api/centres/${codi}`);
     if (response.ok) {
       const data = await response.json();
       form.centreData.nom_oficial = data.nom || data.denominacio_completa; 
@@ -365,7 +365,7 @@ const buscarCentrePerProfessor = async (codi) => {
 
   loadingCentre.value = true;
   try {
-    const response = await fetch(`http://localhost:3000/api/centres/${codi}`);
+    const response = await fetch(`https://enginygrup3.dam.inspedralbes.cat/api/centres/${codi}`);
     if (response.ok) {
       const data = await response.json();
       nomCentreProfesorDisplay.value = data.nom || data.denominacio_completa;
@@ -423,7 +423,7 @@ const guardarUsuari = async () => {
     console.log("Enviando al backend:", payload); 
 
     // 2. Enviamos la petición
-    const response = await fetch('http://localhost:3000/api/usuaris', {
+    const response = await fetch('https://enginygrup3.dam.inspedralbes.cat/api/usuaris', {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json' 

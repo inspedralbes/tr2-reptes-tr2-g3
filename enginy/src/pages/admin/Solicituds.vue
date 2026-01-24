@@ -279,7 +279,7 @@ const countPendientes = computed(() =>
 const cargarSolicitudes = async () => {
   loading.value = true;
   try {
-    const response = await fetch('http://localhost:3000/api/solicituds'); 
+    const response = await fetch('https://enginygrup3.dam.inspedralbes.cat/api/solicituds'); 
     if (response.ok) {
       solicitudes.value = await response.json();
     } else {
@@ -295,7 +295,7 @@ const cargarSolicitudes = async () => {
 const actualizarEstado = async (item, nuevoEstado) => {
   loadingId.value = item._id;
   try {
-    const response = await fetch(`http://localhost:3000/api/solicituds/${item._id}`, {
+    const response = await fetch(`https://enginygrup3.dam.inspedralbes.cat/api/solicituds/${item._id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ estat: nuevoEstado })

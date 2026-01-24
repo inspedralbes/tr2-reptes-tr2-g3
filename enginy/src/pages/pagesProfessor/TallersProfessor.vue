@@ -290,7 +290,7 @@ onMounted(async () => {
  try {
  const userId = authStore.user?._id || 'ID_PRUEBA'; // Reemplaza ID_PRUEBA si no usas Pinia aún
  
- const response = await fetch(`http://localhost:3000/api/app/profesor/${userId}/tallers`);
+ const response = await fetch(`https://enginygrup3.dam.inspedralbes.cat/api/app/profesor/${userId}/tallers`);
  
  if (!response.ok) throw new Error('Error al carregar tallers');
  const data = await response.json();
@@ -406,7 +406,7 @@ const guardarAlumnos = async () => {
  llista: alumnosExtraidos.value
  };
 
- const response = await fetch('http://localhost:3000/api/app/assistencia', {
+ const response = await fetch('https://enginygrup3.dam.inspedralbes.cat/api/app/assistencia', {
  method: 'POST',
  headers: { 'Content-Type': 'application/json' },
  body: JSON.stringify(payload)
@@ -458,7 +458,7 @@ const guardarCanvisLlista = async () => {
  llista: alumnesDelTaller.value
  };
 
- const response = await fetch('http://localhost:3000/api/app/assistencia', {
+ const response = await fetch('https://enginygrup3.dam.inspedralbes.cat/api/app/assistencia', {
  method: 'POST',
  headers: { 'Content-Type': 'application/json' },
  body: JSON.stringify(payload)

@@ -16,7 +16,7 @@ export const useAuthStore = defineStore('auth', {
   actions: {
     async login(email, password) {
       try {
-        const response = await fetch('http://localhost:3000/api/login', {
+        const response = await fetch('https://enginygrup3.dam.inspedralbes.cat/api/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password })

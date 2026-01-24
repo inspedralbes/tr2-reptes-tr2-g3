@@ -164,7 +164,7 @@ const authStore = useAuthStore();
 
 onMounted(async () => {
   try {
-    const tallersResponse = await fetch('http://localhost:3000/api/tallers');
+    const tallersResponse = await fetch('https://enginygrup3.dam.inspedralbes.cat/api/tallers');
 
     if (!tallersResponse.ok) throw new Error('Error de xarxa al carregar tallers');
     

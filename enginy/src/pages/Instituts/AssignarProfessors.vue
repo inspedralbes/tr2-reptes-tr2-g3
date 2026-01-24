@@ -142,10 +142,10 @@ onMounted(async () => {
   try {
     // Asegúrate de que estas URLs sean correctas para tu entorno
     const centreCodi = authStore.user?.perfil?.codi_centre;
-    const professorsUrl = centreCodi ? `http://localhost:3000/api/professors?codi=${encodeURIComponent(centreCodi)}` : 'http://localhost:3000/api/professors';
+    const professorsUrl = centreCodi ? `https://enginygrup3.dam.inspedralbes.cat/api/professors?codi=${encodeURIComponent(centreCodi)}` : 'https://enginygrup3.dam.inspedralbes.cat/api/professors';
 
     const [resSols, resProfs] = await Promise.all([
-      fetch('http://localhost:3000/api/solicituds'),
+      fetch('https://enginygrup3.dam.inspedralbes.cat/api/solicituds'),
       fetch(professorsUrl)
     ]);
 
@@ -191,7 +191,7 @@ const solicitudsFiltrades = computed(() => {
 const guardarAssignacio = async (sol) => {
   saving.value = sol._id;
   try {
-    const response = await fetch(`http://localhost:3000/api/solicituds/${sol._id}/professors`, {
+    const response = await fetch(`https://enginygrup3.dam.inspedralbes.cat/api/solicituds/${sol._id}/professors`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 

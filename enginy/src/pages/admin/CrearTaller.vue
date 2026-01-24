@@ -317,7 +317,7 @@ const guardarTaller = async () => {
     };
 
     // 3. Petición POST al servidor (La parte que faltaba)
-    const response = await fetch('http://localhost:3000/api/tallers', {
+    const response = await fetch('https://enginygrup3.dam.inspedralbes.cat/api/tallers', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'

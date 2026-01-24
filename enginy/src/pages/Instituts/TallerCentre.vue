@@ -160,7 +160,7 @@ const carregant = ref(true);
 
 onMounted(async () => {
   try {
-    const response = await fetch('http://localhost:3000/api/tallers');
+    const response = await fetch('https://enginygrup3.dam.inspedralbes.cat/api/tallers');
     if (!response.ok) throw new Error('Network error');
     
     const data = await response.json();

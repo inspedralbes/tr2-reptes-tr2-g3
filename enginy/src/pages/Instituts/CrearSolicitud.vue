@@ -302,7 +302,7 @@ const cargarDatos = async () => {
   loading.value = true;
   try {
     const id = route.params.id;
-    const tallerRes = await fetch(`http://localhost:3000/api/tallers/${id}`);
+    const tallerRes = await fetch(`https://enginygrup3.dam.inspedralbes.cat/api/tallers/${id}`);
 
     const data = await tallerRes.json();
     
@@ -367,7 +367,7 @@ const buscarNomCentre = async (codi) => {
 
     // Si no, preguntamos al backend
     try {
-        const res = await fetch(`http://localhost:3000/api/centres/${codi}`);
+        const res = await fetch(`https://enginygrup3.dam.inspedralbes.cat/api/centres/${codi}`);
         if(res.ok) {
             const data = await res.json();
             // El backend puede devolver 'nom' o 'denominacio_completa'
@@ -421,7 +421,7 @@ const enviarSolicitud = async () => {
         payload.capacitat_proposada = parseInt(form.capacitat_proposada);
     }
 
-    const response = await fetch('http://localhost:3000/api/solicituds', {
+    const response = await fetch('https://enginygrup3.dam.inspedralbes.cat/api/solicituds', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
