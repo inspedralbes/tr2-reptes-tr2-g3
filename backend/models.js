@@ -415,6 +415,114 @@ async function deleteTaller(tallerId) {
     return result;
 }
 
+// --- NUEVO: ESTADÍSTICAS POR ESTADO DE SOLICITUD ---
+async function getEstadistiquesPerEstat() {
+    const db = await connectDB();
+    return await db.collection('sollicituds').aggregate([
+        {
+            $group: {
+                _id: "$estat", // Agrupa por el campo 'estat'
+                total: { $sum: 1 } // Cuenta cuántos documentos hay en cada grupo
+            }
+        },
+        {
+            $sort: { "_id": 1 } // Ordena por el nombre del estado
+        }
+    ]).toArray();
+}
+
+// --- NUEVO: TALLERES MÁS DEMANDADOS ---
+async function getTallersMesDemandats() {
+    const db = await connectDB();
+    return await db.collection('sollicituds').aggregate([
+        {
+            $group: {
+                _id: "$taller_id", // Agrupa por el ID del taller en las solicitudes
+                numero_solicituds: { $sum: 1 } // Cuenta cuántas solicitudes tiene cada taller
+            }
+        },
+        {
+            $sort: { "numero_solicituds": -1 } // Ordena de más a menos solicitado
+        },
+        {
+            $lookup: { // Une con la colección 'tallers' para obtener los detalles
+                from: "tallers",
+                localField: "_id",
+                foreignField: "_id",
+                as: "taller_info"
+            }
+        },
+        {
+            $unwind: "$taller_info" // Descomprime el array resultante del lookup
+        },
+        {
+            $project: { // Proyecta los campos finales deseados
+                _id: 0,
+                taller_id: "$_id",
+                nom_taller: "$taller_info.nom",
+                modalitat: "$taller_info.modalitat",
+                numero_solicituds: 1
+            }
+        },
+        {
+            $limit: 10 // Opcional: limita a los 10 talleres más populares
+        }
+    ]).toArray();
+}
+
+// --- NUEVO: OCUPACIÓN POR ZONA (MUNICIPIO) ---
+async function getOcupacioPerZona() {
+    const db = await connectDB();
+    return await db.collection('tallers').aggregate([
+        { // Primero, une con los centros para obtener el municipio
+            $lookup: {
+                from: "centres_oficials",
+                localField: "centre_codi_oficial",
+                foreignField: "_id",
+                as: "info_centre"
+            }
+        },
+        { // Solo nos interesan los talleres que están asignados a un centro
+            $unwind: "$info_centre"
+        },
+        { // Agrupa por el municipio del centro
+            $group: {
+                _id: "$info_centre.municipi",
+                total_places: { $sum: "$places_totals" },
+                places_disponibles: { $sum: "$places_disponibles" },
+                numero_tallers: { $sum": 1 }
+            }
+        },
+        { // Proyecta los resultados y calcula los campos derivados
+            $project: {
+                _id: 0,
+                zona: "$_id",
+                total_places: 1,
+                places_disponibles: 1,
+                numero_tallers: 1,
+                places_ocupades: {
+                    $subtract": [ "$total_places", "$places_disponibles" ]
+                },
+                percentatge_ocupacio: {
+                    $cond: {
+                        if: { $gt: [ "$total_places", 0 ] },
+                        then: {
+                            $multiply": [
+                                { $divide": [ { $subtract: [ "$total_places", "$places_disponibles" ] }, "$total_places" ] },
+                                100
+                            ]
+                        },
+                        else: 0
+                    }
+                }
+            }
+        },
+        {
+            $sort: { "zona": 1 } // Ordena por nombre de zona
+        }
+    ]).toArray();
+}
+
 // --- ACTUALIZAR EL EXPORT ---
 module.exports = {
     validarLogin, 
@@ -430,5 +538,9 @@ module.exports = {
     saveAssistencia,
     deleteAssistencia,
     updateTallerFase,
-    deleteTaller
+    deleteTaller,
+    // AÑADE LAS NUEVAS AGREGACIONES:
+    getEstadistiquesPerEstat,
+    getTallersMesDemandats,
+    getOcupacioPerZona
 };
