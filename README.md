@@ -1,50 +1,69 @@
 # 🏫 ENGINY: Sistema de Gestió de Tallers Educatius
 
-Aquest projecte consisteix en el disseny, desenvolupament i posada en marxa d'una plataforma web integral per a la gestió, sol·licitud i assignació de tallers en centres educatius. L'aplicatiu connecta centres, professors i administradors per automatitzar el procés de reserva i la logística pedagògica.
+<p align="center">
+  <img src="https://img.shields.io/badge/Status-In%20Development-yellow?style=for-the-badge" alt="Status">
+  <img src="https://img.shields.io/badge/Vue.js-4FC08D?style=for-the-badge&logo=vue.js&logoColor=white" alt="Vue">
+  <img src="https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Node">
+  <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker">
+  <img src="https://img.shields.io/badge/License-Apache--2.0-blue?style=for-the-badge" alt="License">
+</p>
 
-## 📋 Objectiu de l'Encàrrec
-L'aplicatiu permet als centres educatius sol·licitar tallers d'un catàleg, indicar el nombre d'alumnes i rebre assignacions automàtiques. També centralitza la coordinació de professors referents i el seguiment.
+---
+
+## 🌟 Sobre el Projecte
+
+**ENGINY** és una plataforma web integral dissenyada per optimitzar la gestió, sol·licitud i assignació de tallers en l'àmbit educatiu. El projecte neix de la necessitat d'automatitzar la logística pedagògica, connectant de manera eficient centres, docents i coordinadors.
+
+---
 
 ## 🚀 Àrees del Sistema
 
-### 1. Àrea de Centres 🏫
-* **Peticions:** Formulari de nova petició de tallers.
-* **Seguiment:** Consulta en temps real de l'estat de les sol·licituds i recepció d'assignacions.
-* **Validació:** Checklist final per confirmar la realització.
+El sistema es divideix en tres grans mòduls funcionals:
 
-### 2. Àrea d'Administració (Coordinació) ⚙️
-* **Gestió del Catàleg:** Creació, edició i arxiu de l'oferta de tallers.
-* **Motor d'Assignació:** Algorisme de distribució de places.
-* **Logística:** Designació de professors referents i enviament de notificacions automàtiques.
-* **Analítica:** Generació d'informes, llistes d'alumnes i estadístiques de participació.
+| Àrea | Descripció | Funcions Clau |
+| :--- | :--- | :--- |
+| **Centres 🏫** | Gestió des del centre educatiu | Formularis de petició, seguiment en viu i validació final. |
+| **Admin ⚙️** | Control i coordinació | Gestió del catàleg, motor d'assignació i analítica. |
+| **Professors 👨‍🏫** | Àrea de l'expert | Consulta de tallers assignats i notificacions de tasques. |
 
-### 3. Àrea de Professors 👨‍🏫
-* **Consultes:** Visualització dels tallers assignats com a referents.
-* **Notificacions:** Recepció d'avisos automàtics per a la gestió de les seves tasques.
+---
 
-## 🛠️ Tecnologies Utilitzades
-* **Frontend:** Vue.js (Framework reactiu).
-* **Backend:** Node.js / JavaScript.
-* **Contenidors:** Docker i Docker Compose per a l'orquestració de l'entorn.
+## 🛠️ Stack Tecnològic
+
+L'arquitectura es basa en tecnologies modernes per garantir escalabilitat i rendiment:
+
+- **Frontend:** `Vue.js` (Interfície reactiva i intuïtiva).
+- **Backend:** `Node.js` (Lògica de servidor robusta).
+- **Infraestructura:** `Docker` & `Docker Compose` (Orquestració i desplegament).
+
+---
 
 ## 📂 Estructura del Repositori
-* `/backend`: Lògica del servidor i motor d'assignació.
-* `/enginy`: Codi font del Frontend (Vue).
-* `/doc`: Documentació del projecte i requeriments funcionals.
 
-## 🚀 Instal·lació i Execució
-1. Clona el repositori:
-   ```Bash
-   git clone [https://github.com/inspedralbes/tr2-reptes-tr2-g3.git](https://github.com/inspedralbes/tr2-reptes-tr2-g3.git)
-   ```
-Aixeca el sistema amb Docker:
+```Bash
+├── 📁 backend   # Lògica del servidor i motor d'assignació
+├── 📁 enginy    # Codi font del Frontend (Vue)
+├── 📁 doc       # Documentació i requeriments funcionals
+└── 📄 docker-compose.yml
+```
+
+## ⚙️ Instal·lació i Execució
+Per posar en marxa el projecte localment, segueix aquests passos:
+
+Clonar el repositori
+
+```Bash
+git clone [https://github.com/inspedralbes/tr2-reptes-tr2-g3.git](https://github.com/inspedralbes/tr2-reptes-tr2-g3.git)
+cd tr2-reptes-tr2-g3
+```
+
+Aixecar serveis amb Docker
 
 ```Bash
 docker-compose up --build
 ```
 
 ## 👥 Membres del Projecte
-Aquest projecte ha estat desenvolupat per:
 
 Angel Cuadra
 
@@ -53,3 +72,5 @@ Eric Ruiz
 Matías Negrón
 
 Aymar Ramos
+
+<p align="center"> Desenvolupat amb ❤️ a l'Institut Pedralbes </p>
