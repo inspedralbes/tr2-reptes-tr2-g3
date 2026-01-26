@@ -1,13 +1,8 @@
-/**
- * router/index.ts
- *
- * Automatic routes for `./src/pages/*.vue`
- */
 
-// Composables
+
 import { createRouter, createWebHistory } from 'vue-router'
 
-// Importamos el Store de Pinia
+
 import { useAuthStore } from '@/stores/auth'
 
 import Tallers from '@/pages/Tallers.vue'
@@ -39,7 +34,7 @@ const routes = [
     path: '/assignarProfessors',
     name: 'AssignarProfessors',
     component: AssignarProfessors,
-    meta: { requiresAuth: true, role: 'centre' } // O 'admin' si también quieres que entren
+    meta: { requiresAuth: true, role: 'centre' }
   },
   {
     path: '/navBarProfessor',
@@ -63,15 +58,15 @@ const routes = [
     path: '/tallers',
     name: 'Tallers',
     component: Tallers,
-    meta: { requiresAuth: true } // Pública (Catálogo)
+    meta: { requiresAuth: true }
   },
   {
     path: '/login',
     name: 'Login',
     component: Login,
-    meta: { requiresAuth: false, guestOnly: true } // Solo para no logueados
+    meta: { requiresAuth: false, guestOnly: true }
   },
-  // --- RUTAS PROTEGIDAS (Requieren Login) ---
+
   {
     path: '/crearTaller',
     name: 'CrearTaller',
@@ -103,33 +98,33 @@ const router = createRouter({
   routes,
 })
 
-// --- GUARDIA DE NAVEGACIÓN (Seguridad) ---
+
 router.beforeEach(async (to, from, next) => {
-  // Inicializamos el store dentro del guard para evitar errores de inicialización
+
   const authStore = useAuthStore()
 
-  // Obtenemos el rol del usuario (asumiendo que está en authStore.user.role)
+
   const userRole = authStore.user?.rol
 
-  // 1. Si la ruta requiere autenticación y NO estamos logueados -> Login
+
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     return next('/login')
   }
 
-  // 2. Si la ruta es solo para invitados (Login) y SI estamos logueados -> Redirigir según rol
+
   if (to.meta.guestOnly && authStore.isAuthenticated) {
     if (userRole === 'professor') return next('/tallersProfessor')
-    if (userRole === 'admin') return next('/tallers') // O la home de admin
+    if (userRole === 'admin') return next('/tallers')
     if (userRole === 'centre') return next('/tallerCentre')
     return next('/tallers')
   }
 
-  // 3. Control de Acceso por Rol (RBAC)
+
   const requiredRole = to.meta.role;
   const requiredRoles = to.meta.roles;
 
   if ((requiredRole || requiredRoles) && authStore.isAuthenticated) {
-    // El admin siempre tiene acceso
+
     if (userRole === 'admin') {
       return next();
     }
@@ -142,18 +137,18 @@ router.beforeEach(async (to, from, next) => {
     }
 
     if (!hasAccess) {
-      // Si no tiene acceso, redirigir a su página principal
+
       if (userRole === 'professor') return next('/tallersProfessor');
       if (userRole === 'centre') return next('/tallerCentre');
-      return next('/tallers'); // Fallback
+      return next('/tallers');
     }
   }
 
-  // 4. Todo correcto, continuar
+
   next()
 })
 
-// Workaround for https://github.com/vitejs/vite/issues/11804
+
 router.onError((err, to) => {
   if (err?.message?.includes?.('Failed to fetch dynamically imported module')) {
     if (localStorage.getItem('vuetify:dynamic-reload')) {

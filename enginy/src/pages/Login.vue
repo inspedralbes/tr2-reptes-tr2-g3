@@ -104,6 +104,7 @@
         <v-img
           src="https://undraw.co/api/illustrator/v1/svg/2618/1976d2/69f0ae/ffffff/Image.svg" 
           alt="Ilustración"
+          alt="Ilustración"
           width="100%"
           max-width="400"
           class="mb-8 drop-shadow-img"
@@ -122,10 +123,10 @@
 <script setup>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { useAuthStore } from '@/stores/auth'; // <--- IMPORTAMOS PINIA STORE
+import { useAuthStore } from '@/stores/auth';
 
 const router = useRouter();
-const authStore = useAuthStore(); // <--- INICIALIZAMOS EL STORE
+const authStore = useAuthStore();
 
 const email = ref('');
 const password= ref('');
@@ -140,20 +141,20 @@ const handleLogin = async () => {
   error.value = '';
 
   try {
-    // LLAMAMOS A LA ACCIÓN DEL STORE
+
     const user = await authStore.login(email.value, password.value);
     
-    // Redirigir segons el rol de l'usuari
+
     const rol = authStore.user?.rol;
 
     if (rol === 'admin') {
-      router.push('/tallers'); // Pàgina principal d'Admin
+      router.push('/tallers');
     } else if (rol === 'professor') {
-      router.push('/tallersProfessor'); // Pàgina principal de Professor
+      router.push('/tallersProfessor');
     } else if (rol === 'centre') {
-      router.push('/tallerCentre'); // Pàgina principal de Centre (Catàleg)
+      router.push('/tallerCentre');
     } else {
-      router.push('/tallers'); // Per defecte (o rol 'institut')
+      router.push('/tallers');
     }
   } catch (e) {
     error.value = e.message;

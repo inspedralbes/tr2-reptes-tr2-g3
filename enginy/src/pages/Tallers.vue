@@ -172,8 +172,8 @@ onMounted(async () => {
 
     tallers.value = tallersData.map(t => ({
       ...t,
-      fase: t.fase || 1, // Assegurem que la fase té un valor per defecte
-      // Generamos tags basados en los detalles técnicos
+      fase: t.fase || 1,
+
       tags: Object.keys(t.detalls_tecnics || {})
             .filter(key => t.detalls_tecnics[key] === true)
             .map(key => key.charAt(0).toUpperCase() + key.slice(1)), 
@@ -190,7 +190,7 @@ onMounted(async () => {
 const tallersFiltrats = computed(() => {
   if (!cerca.value) return tallers.value;
   const q = cerca.value.toLowerCase();
-  // Añadimos filtro por 'lloc' para poder buscar por nombre de instituto también
+
   return tallers.value.filter(t => 
     t.nom.toLowerCase().includes(q) || 
     t.modalitat.toLowerCase().includes(q) ||
@@ -198,7 +198,7 @@ const tallersFiltrats = computed(() => {
   );
 });
 
-// Colores más corporativos
+
 const getColorModalitat = (mod) => {
   const map = { 'A': '#3B82F6', 'B': '#10B981', 'C': '#F59E0B' }; 
   return map[mod] || 'grey';
@@ -217,19 +217,19 @@ const getTextoPlazas = (t) => {
 };
 
 const generarImagen = (taller) => {
-  // 1. Prioridad: Imagen real guardada en BDD (si la pusiste en CrearTaller)
+
   if (taller.imatge && taller.imatge.startsWith('http')) {
     return taller.imatge;
   }
 
-  // 2. Fallback: Unsplash automático según el nombre
+
   const nom = taller.nom || '';
   const keywords = {
     'Robòtica': 'robot', 'Cuina': 'chef', 'Vela': 'sailing', 
     'Impressió': '3dprinting', 'Mecànica': 'mechanic', 'Jardineria': 'garden',
     'Sanitat': 'hospital', 'Imatge': 'camera'
   };
-  // Busca una palabra clave o usa 'school' por defecto
+
   const key = Object.keys(keywords).find(k => nom.includes(k));
   const word = key ? keywords[key] : 'school';
   
@@ -246,7 +246,6 @@ const veureDetall = (taller) => {
 </script>
 
 <style scoped>
-/* ESTILOS (Igual que los tenías) */
 
 .hover-card {
   transition: all 0.2s ease-in-out;

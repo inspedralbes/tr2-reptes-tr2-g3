@@ -6,7 +6,6 @@ const bcrypt = require('bcryptjs');
 const nodemailer = require('nodemailer'); 
 require('dotenv').config(); 
 
-// --- CONFIGURACIÓ NODEMAILER ---
 const transporter = nodemailer.createTransport({
     host: process.env.EMAIL_HOST,
     port: process.env.EMAIL_PORT,
@@ -19,9 +18,7 @@ const transporter = nodemailer.createTransport({
         rejectUnauthorized: false
     }
 });
-// --------------------------------
 
-// Importamos SOLO las funciones básicas que ya tenías en models
 const { 
     createTaller, 
     createSollicitud, 
@@ -39,11 +36,7 @@ const PORT = 3000;
 app.use(cors());
 app.use(express.json({ limit: '50mb' })); 
 
-// ==========================================
-// 1. AUTENTICACIÓN Y USUARIOS
-// ==========================================
 
-// RUTA LOGIN
 app.post('/api/login', async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -72,7 +65,6 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
-// CREAR USUARIO
 app.post('/api/usuaris', async (req, res) => {
     try {
         const id = await createUsuari(req.body);
@@ -83,8 +75,6 @@ app.post('/api/usuaris', async (req, res) => {
     }
 });
 
-// OBTENER LISTA DE PROFESORES 
-// (Lo hacemos directo a BD para no depender de cambios en models.js)
 app.get('/api/professors', async (req, res) => {
     try {
         const db = await connectDB();
@@ -121,9 +111,6 @@ app.get('/api/professors', async (req, res) => {
     }
 });
 
-// ==========================================
-// 2. TALLERES
-// ==========================================
 
 app.get('/api/tallers', async (req, res) => {
     try {
@@ -160,14 +147,9 @@ app.post('/api/tallers', async (req, res) => {
     }
 });
 
-// ==========================================
-// 3. SOLICITUDES
-// ==========================================
 
 app.get('/api/solicituds', async (req, res) => {
     try {
-        // NOTA: Si ves que no salen los días, es porque 'getAllSolicitudes' en models
-        // necesita tener 'assignacio_info: 1'. Si no quieres tocar models, avísame.
         const solicitudes = await getAllSolicitudes();
         res.json(solicitudes);
     } catch (error) {
@@ -203,29 +185,25 @@ app.put('/api/solicituds/:id', async (req, res) => {
     }
 });
 
-// ASIGNAR PROFESORES A UNA SOLICITUD (CON CORREO)
 app.put('/api/solicituds/:id/professors', async (req, res) => {
     try {
         const db = await connectDB();
-        // Recibimos 'info' que son los días escritos en el frontend
         const { professors, info } = req.body; 
 
         if (!Array.isArray(professors) || professors.length > 2) {
             return res.status(400).json({ error: "Màxim 2 professors per sol·licitud." });
         }
 
-        // 1. GUARDAMOS EN BASE DE DATOS
         await db.collection('sollicituds').updateOne(
             { _id: new ObjectId(req.params.id) },
             { 
                 $set: { 
                     professors_assignats_ids: professors,
-                    assignacio_info: info || "" // <--- AQUÍ SE GUARDA LA FECHA/TEXTO
+                    assignacio_info: info || ""
                 } 
             }
         );
 
-        // --- LÒGICA D'ENVIAMENT DE CORREU ---
         try {
             const sollicitud = await db.collection('sollicituds').findOne({ _id: new ObjectId(req.params.id) });
             if (sollicitud) {
@@ -262,7 +240,6 @@ app.put('/api/solicituds/:id/professors', async (req, res) => {
         } catch (emailLogicError) {
             console.error(`[EMAIL] Error enviant correus:`, emailLogicError);
         }
-        // --- FINAL LÒGICA CORREU ---
 
         res.json({ message: "Professors i detalls assignats correctament" });
     } catch (error) {
@@ -270,17 +247,12 @@ app.put('/api/solicituds/:id/professors', async (req, res) => {
     }
 });
 
-// ==========================================
-// 4. RUTAS APP / EXCEL (Lógica directa aquí para no tocar models.js)
-// ==========================================
 
-// Obtener talleres asignados a un profesor concreto
 app.get('/api/app/profesor/:id/tallers', async (req, res) => {
     try {
         const db = await connectDB();
         const profesorId = req.params.id;
         
-        // Lógica de búsqueda (que antes estaba en getTallersByProfessor)
         let idsBusqueda = [String(profesorId)];
         if (ObjectId.isValid(profesorId)) {
             idsBusqueda.push(new ObjectId(profesorId));
@@ -315,7 +287,6 @@ app.get('/api/app/profesor/:id/tallers', async (req, res) => {
                  _id: 1, 
                  nom: '$taller_info.nom',
                  imatge: '$taller_info.imatge',
-                 // Mapa de dirección
                  lloc: { 
                     $concat: [
                         { $ifNull: ['$centre_info.denominacio_completa', 'Centre desconegut'] }, 
@@ -343,7 +314,6 @@ app.get('/api/app/profesor/:id/tallers', async (req, res) => {
     }
 });
 
-// Guardar lista de asistencia
 app.post('/api/app/assistencia', async (req, res) => {
     try {
         const { sollicitud_id, llista } = req.body;
@@ -366,7 +336,6 @@ app.post('/api/app/assistencia', async (req, res) => {
     }
 });
 
-// Borrar lista de asistencia
 app.delete('/api/app/assistencia/:id', async (req, res) => {
     try {
         const db = await connectDB();
@@ -381,9 +350,6 @@ app.delete('/api/app/assistencia/:id', async (req, res) => {
     }
 });
 
-// ==========================================
-// 5. CONFIGURACIÓ DE FASES (PER TALLER)
-// ==========================================
 
 app.put('/api/tallers/:id/fase', async (req, res) => {
     try {
@@ -399,9 +365,6 @@ app.put('/api/tallers/:id/fase', async (req, res) => {
     }
 });
 
-// ==========================================
-// 5. CENTROS Y UTILIDADES
-// ==========================================
 
 app.get('/api/centres/:codi', async (req, res) => {
     try {
@@ -423,7 +386,6 @@ app.get('/api/debug/reset-solicituds', async (req, res) => {
     res.send("<h1>Historial esborrat</h1><p>Totes les sol·licituds s'han eliminat.</p>");
 });
 
-// ARRANCAR SERVIDOR
 app.listen(PORT, () => {
     console.log(`Servidor API escoltant a http://localhost:${PORT}`);
 });

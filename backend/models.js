@@ -12,7 +12,6 @@ function validarEnum(valor, permitidos, campo) {
     }
 }
 
-// --- VALIDAR LOGIN ---
 async function validarLogin(email, passwordInput) {
     const db = await connectDB();
     const user = await db.collection('usuaris').findOne({ email: email });
@@ -24,7 +23,6 @@ async function validarLogin(email, passwordInput) {
     return null; 
 }
 
-// --- CREAR USUARIO ---
 async function createUsuari(data) {
     const db = await connectDB();
     
@@ -59,7 +57,6 @@ async function createUsuari(data) {
     return result.insertedId;
 }
 
-// --- CREAR TALLER ---
 async function createTaller(data) {
     const db = await connectDB();
     validarEnum(data.modalitat, MODALITATS, 'modalitat');
@@ -81,22 +78,18 @@ async function createTaller(data) {
     return result.insertedId;
 }
 
-// --- CREAR SOLICITUD (CORREGIDO) ---
 async function createSollicitud(centreUserId, tallerId, data) {
     const db = await connectDB();
 
     const taller = await db.collection('tallers').findOne({ _id: new ObjectId(tallerId) });
     if (!taller) throw new Error("Taller no encontrado");
 
-    // Comprovació de la fase del taller
     if ((taller.fase || 1) !== 1) {
         throw new Error("El període d'inscripció per a aquest taller està tancat.");
     }
 
-    // TIPO DE SOLICITUD: 'assistencia' (enviar alumnos) o 'acollida' (pedir ser sede)
     const tipusSolicitud = data.tipus || 'assistencia'; 
 
-    // VALIDACIÓN ESPECÍFICA PARA ASISTENCIA (RESERVAR PLAZAS)
     if (tipusSolicitud === 'assistencia') {
         if (!taller.centre_codi_oficial) {
              throw new Error("Este taller es solo una plantilla. Debes solicitar 'Acollir el taller' en tu centro.");
@@ -114,7 +107,6 @@ async function createSollicitud(centreUserId, tallerId, data) {
         data_solicitud: new Date(),
         codi_centre: data.codi_centre ? String(data.codi_centre).trim().padStart(8, '0') : null,
         
-        // Datos comunes
         preferencies: {
             dia_preferit: data.dia_preferit,
             observacions: data.observacions,
@@ -124,18 +116,14 @@ async function createSollicitud(centreUserId, tallerId, data) {
         checklist_seguiment: []
     };
 
-    // DATOS ESPECÍFICOS SEGÚN TIPO
     if (tipusSolicitud === 'assistencia') {
         solicitudDoc.alumnes_previstos = parseInt(data.alumnes_previstos);
     } else {
-        // Si es 'acollida', el centro dice cuánta capacidad tiene su sala
         solicitudDoc.capacitat_proposada = parseInt(data.capacitat_proposada);
-        // NO restamos plazas del taller original, porque esto creará un taller nuevo en el futuro
     }
 
     const result = await db.collection('sollicituds').insertOne(solicitudDoc);
 
-    // SOLO RESTAMOS PLAZAS SI ES ASISTENCIA A UN TALLER EXISTENTE
     if (tipusSolicitud === 'assistencia') {
         await db.collection('tallers').updateOne(
             { _id: new ObjectId(tallerId) },
@@ -157,7 +145,6 @@ async function createValoracio(sollicitudId, tallerId, tipoUsuario, respostes) {
     return await db.collection('valoracions').insertOne(valoracioDoc);
 }
 
-// --- GET ALL SOLICITUDES (MEJORADO PARA NOMBRES) ---
 async function getAllSolicitudes() {
     const db = await connectDB();
     return await db.collection('sollicituds').aggregate([
@@ -263,7 +250,6 @@ async function getAllTallersWithNames() {
                 places_totals: 1,
                 detalls_tecnics: 1,
                 fase: { $ifNull: ['$fase', 1] }, // Retornem la fase del taller, per defecte 1
-                // Lógica para determinar si es un taller "Plantilla" o "Asignado"
                 es_plantilla: { $cond: { if: { $ifNull: ['$info_centre', false] }, then: false, else: true } },
                 nom_institut: { $ifNull: ['$info_centre.nom', 'Per determinar (Catàleg)'] },
                 adreca_institut: { $ifNull: ['$info_centre.adreca', null] }, // <--- AQUI LA DIRECCIÓN
@@ -272,10 +258,7 @@ async function getAllTallersWithNames() {
         }
     ]).toArray();
 }
-// ... (todo tu código anterior sigue igual)
 
-// --- NUEVO: APP & EXCEL - OBTENER TALLERES ASIGNADOS A UN PROFE ---
-// En models.js
 
 async function getTallersByProfessor(profesorId) {
     const db = await connectDB();
@@ -315,8 +298,6 @@ async function getTallersByProfessor(profesorId) {
              nom: '$taller_info.nom',
              imatge: '$taller_info.imatge',
                 
-                // --- AQUÍ ESTÁ EL CAMBIO IMPORTANTE DEL MAPA ---
-                // Concatenamos: Nombre + Dirección (adreoa) + Municipio
                 lloc: { 
                     $concat: [
                         { $ifNull: ['$centre_info.denominacio_completa', 'Centre desconegut'] }, 
@@ -339,7 +320,6 @@ async function getTallersByProfessor(profesorId) {
         }
     ]).toArray();
 }
-// --- NUEVO: APP & EXCEL - GUARDAR ASISTENCIA ---
 async function saveAssistencia(sollicitudId, llistaAlumnos) {
     const db = await connectDB();
     
@@ -347,17 +327,14 @@ async function saveAssistencia(sollicitudId, llistaAlumnos) {
         throw new Error("ID de sol·licitud no vàlid");
     }
 
-    // llistaAlumnos es el array que sacamos del Excel o de la App
     const result = await db.collection('sollicituds').updateOne(
         { _id: new ObjectId(sollicitudId) },
         { $set: { llista_assistencia: llistaAlumnos } }
     );
     
-    // Devolvemos el resultado para verificar en el server si se ha modificado algo
     return result;
 }
 
-// --- NUEVO: BORRAR ASISTENCIA ---
 async function deleteAssistencia(sollicitudId) {
     const db = await connectDB();
     
@@ -365,7 +342,6 @@ async function deleteAssistencia(sollicitudId) {
         throw new Error("ID de sol·licitud no vàlid");
     }
 
-    // Vaciamos el array llista_assistencia
     return await db.collection('sollicituds').updateOne(
         { _id: new ObjectId(sollicitudId) },
         { $set: { llista_assistencia: [] } }
@@ -390,7 +366,6 @@ async function updateTallerFase(tallerId, nuevaFase) {
         { $set: { fase: faseNum } }
     );
 }
-// --- NUEVO: ELIMINAR TALLER (CON VERIFICACIÓN) ---
 async function deleteTaller(tallerId) {
     const db = await connectDB();
     
@@ -399,13 +374,11 @@ async function deleteTaller(tallerId) {
     }
     const id = new ObjectId(tallerId);
 
-    // Verificación previa: No eliminar si hay solicitudes asociadas
     const numSolicitudes = await db.collection('sollicituds').countDocuments({ taller_id: id });
     if (numSolicitudes > 0) {
         throw new Error(`No es pot eliminar el taller. Té ${numSolicitudes} sol·licitud(s) associada(s).`);
     }
 
-    // Eliminar el taller
     const result = await db.collection('tallers').deleteOne({ _id: id });
 
     if (result.deletedCount === 0) {
@@ -415,7 +388,6 @@ async function deleteTaller(tallerId) {
     return result;
 }
 
-// --- NUEVO: ESTADÍSTICAS POR ESTADO DE SOLICITUD ---
 async function getEstadistiquesPerEstat() {
     const db = await connectDB();
     return await db.collection('sollicituds').aggregate([
@@ -431,7 +403,6 @@ async function getEstadistiquesPerEstat() {
     ]).toArray();
 }
 
-// --- NUEVO: TALLERES MÁS DEMANDADOS ---
 async function getTallersMesDemandats() {
     const db = await connectDB();
     return await db.collection('sollicituds').aggregate([
@@ -470,7 +441,6 @@ async function getTallersMesDemandats() {
     ]).toArray();
 }
 
-// --- NUEVO: OCUPACIÓN POR ZONA (MUNICIPIO) ---
 async function getOcupacioPerZona() {
     const db = await connectDB();
     return await db.collection('tallers').aggregate([
@@ -523,7 +493,6 @@ async function getOcupacioPerZona() {
     ]).toArray();
 }
 
-// --- ACTUALIZAR EL EXPORT ---
 module.exports = {
     validarLogin, 
     createUsuari,
@@ -533,13 +502,11 @@ module.exports = {
     getAllSolicitudes,
     updateEstatSolicitud,
     getAllTallersWithNames,
-    // AÑADE ESTAS DOS:
     getTallersByProfessor,
     saveAssistencia,
     deleteAssistencia,
     updateTallerFase,
     deleteTaller,
-    // AÑADE LAS NUEVAS AGREGACIONES:
     getEstadistiquesPerEstat,
     getTallersMesDemandats,
     getOcupacioPerZona

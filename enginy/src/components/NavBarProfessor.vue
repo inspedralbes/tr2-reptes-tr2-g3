@@ -52,23 +52,13 @@ input::placeholder { color: #999; font-style: italic; }
 img { object-fit: contain; }
 .v-container { margin-left: auto; margin-right: auto; }
 
-/* --- ESTILOS NUEVOS PARA EL MENÚ --- */
-
-/* 1. Transición suave */
 .menu-btn {
   transition: all 0.2s ease-in-out;
 }
 
-/* 2. Efecto HOVER: Fondo Azul y Texto Blanco */
-.menu-btn:hover {
-  background-color: #004B87 !important;
-  color: white !important;
-}
-
-/* 3. Efecto ACTIVO (cuando estás en esa página): Se queda Azul */
 .v-btn--active.menu-btn {
   background-color: #004B87 !important;
   color: white !important;
-  opacity: 1; /* Evita transparencias de Vuetify */
+ opacity: 1;
 }
 </style>

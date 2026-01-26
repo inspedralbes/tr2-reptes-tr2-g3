@@ -113,9 +113,9 @@
 </template>
 
 <script setup>
-// ... (El script que pusiste parece correcto, mantenlo igual)
+
 import { ref, onMounted, computed } from 'vue';
-import NavBarCentre from '@/components/NavBarCentre.vue'; // Asegúrate que la ruta sea correcta
+import NavBarCentre from '@/components/NavBarCentre.vue';
 import { useAuthStore } from '@/stores/auth';
 
 const authStore = useAuthStore();
@@ -140,7 +140,7 @@ const formatearFecha = (fechaRaw) => {
 
 onMounted(async () => {
   try {
-    // Asegúrate de que estas URLs sean correctas para tu entorno
+
     const centreCodi = authStore.user?.perfil?.codi_centre;
     const professorsUrl = centreCodi ? `https://enginygrup3.dam.inspedralbes.cat/api/professors?codi=${encodeURIComponent(centreCodi)}` : 'https://enginygrup3.dam.inspedralbes.cat/api/professors';
 
@@ -174,12 +174,12 @@ const solicitudsFiltrades = computed(() => {
     const esAprovada = sol.estat === 'assignat';
     if (!esAprovada) return false;
 
-    // Preferimos cotejar por codi_centre si existe
+
     if (centreCodi && sol.codi_centre) {
       return String(sol.codi_centre) === String(centreCodi);
     }
 
-    // Fallback: comparar por email del centre si está disponible
+
     if (sol.centre_info?.email) {
       return sol.centre_info.email === userEmail;
     }

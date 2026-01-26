@@ -256,17 +256,17 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { useAuthStore } from '@/stores/auth'; // Asegúrate de tener esto
+import { useAuthStore } from '@/stores/auth';
 import NavBarProfessor from '../../components/NavBarProfessor.vue';
 import * as XLSX from 'xlsx';
 
 const router = useRouter();
 const authStore = useAuthStore();
 const cerca = ref('');
-const tallers = ref([]); // Aquí guardaremos los talleres asignados
+const tallers = ref([]);
 const carregant = ref(true);
 
-// Variables Excel
+
 const dialogExcel = ref(false);
 const tallerSeleccionado = ref(null);
 const archivoExcel = ref(null);
@@ -275,20 +275,20 @@ const procesando = ref(false);
 const guardando = ref(false);
 const errorExcel = ref('');
 
-// Variables para mostrar el llistat
+
 const dialogLlistat = ref(false);
 const alumnesDelTaller = ref([]);
 const tallerPerMostrarLlistat = ref(null);
 
-// Feedback
+
 const snackbar = ref(false);
 const snackbarText = ref('');
 const snackbarColor = ref('success');
 
-// === 1. CARGAR TALLERES ASIGNADOS AL PROFESOR ===
+
 onMounted(async () => {
  try {
- const userId = authStore.user?._id || 'ID_PRUEBA'; // Reemplaza ID_PRUEBA si no usas Pinia aún
+ const userId = authStore.user?._id || 'ID_PRUEBA';
  
  const response = await fetch(`https://enginygrup3.dam.inspedralbes.cat/api/app/profesor/${userId}/tallers`);
  
@@ -302,29 +302,29 @@ onMounted(async () => {
  }
 });
 
-// === 2. DESCARGAR PLANTILLA (NUEVO) ===
+
 const descargarPlantilla = () => {
- // Datos de ejemplo
+
  const datosEjemplo = [
  { "Nom Alumne": "Joan Garcia Pérez", "Centre Educatiu": "Institut Milà i Fontanals" },
  { "Nom Alumne": "Maria Vila Roig", "Centre Educatiu": "Institut Escola del Treball" },
  { "Nom Alumne": "Pau López Sans", "Centre Educatiu": "Institut Milà i Fontanals" }
  ];
 
- // Crear hoja de trabajo
+
  const ws = XLSX.utils.json_to_sheet(datosEjemplo);
  
  ws['!cols'] = [{ wch: 30 }, { wch: 30 }];
 
- // Crear libro
+
  const wb = XLSX.utils.book_new();
  XLSX.utils.book_append_sheet(wb, ws, "Plantilla Alumnes");
 
- // Descargar archivo
+
  XLSX.writeFile(wb, "Plantilla_Assistència.xlsx");
 };
 
-// === 3. PROCESAR EXCEL (CON LOGICA DE NOMBRES) ===
+
 const procesarExcel = async (eventValue) => {
  const incoming = typeof eventValue !== 'undefined' ? eventValue : archivoExcel.value;
 
@@ -397,7 +397,7 @@ const procesarExcel = async (eventValue) => {
  }
 };
 
-// === 4. GUARDAR EN BACKEND ===
+
 const guardarAlumnos = async () => {
  guardando.value = true;
  try {
@@ -434,10 +434,10 @@ const guardarAlumnos = async () => {
  }
 };
 
-// --- Métodos para mostrar llistat ---
+
 const obrirModalLlistat = (taller) => {
  tallerPerMostrarLlistat.value = taller;
- // Deep copy para no modificar la lista original hasta guardar
+
  alumnesDelTaller.value = JSON.parse(JSON.stringify(taller.llista_assistencia || []));
  dialogLlistat.value = true;
 };
@@ -470,7 +470,7 @@ const guardarCanvisLlista = async () => {
  snackbarColor.value = "success";
  snackbar.value = true;
 
- // Update local workshops list
+
  const index = tallers.value.findIndex(t => t._id === tallerPerMostrarLlistat.value._id);
  if(index !== -1) {
  tallers.value[index].llista_assistencia = alumnesDelTaller.value;
@@ -487,7 +487,7 @@ const guardarCanvisLlista = async () => {
  }
 };
 
-// Helpers
+
 const abrirModalExcel = (taller) => {
  tallerSeleccionado.value = taller;
  archivoExcel.value = null;
